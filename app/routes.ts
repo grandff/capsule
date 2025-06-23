@@ -1,9 +1,9 @@
 /**
  * Application Routes Configuration
- * 
+ *
  * This file defines all routes for the application using React Router's
  * file-based routing system. Routes are organized by feature and access level.
- * 
+ *
  * The structure uses layouts for shared UI elements and prefixes for route grouping.
  * This approach creates a hierarchical routing system that's both maintainable and scalable.
  */
@@ -28,6 +28,7 @@ export default [
     ...prefix("/settings", [
       route("/theme", "features/settings/api/set-theme.tsx"),
       route("/locale", "features/settings/api/set-locale.tsx"),
+      route("/threads-auth", "features/settings/api/threads-auth.tsx"),
     ]),
     ...prefix("/users", [
       index("features/users/api/delete-account.tsx"),
@@ -84,13 +85,6 @@ export default [
       route("/logout", "features/auth/screens/logout.tsx"),
     ]),
     route("/contact", "features/contact/screens/contact-us.tsx"),
-    ...prefix("/payments", [
-      route("/checkout", "features/payments/screens/checkout.tsx"),
-      layout("core/layouts/private.layout.tsx", { id: "private-payments" }, [
-        route("/success", "features/payments/screens/success.tsx"),
-        route("/failure", "features/payments/screens/failure.tsx"),
-      ]),
-    ]),
   ]),
 
   layout("core/layouts/private.layout.tsx", { id: "private-dashboard" }, [
@@ -98,16 +92,24 @@ export default [
       ...prefix("/dashboard", [
         index("features/users/screens/dashboard.tsx"),
         route("/payments", "features/payments/screens/payments.tsx"),
+        route("/write/today", "features/write/screens/write-today.tsx"),
+        route("/history", "features/history/screens/history-list.tsx"),
+        route("/history/:id", "features/history/screens/history-detail.tsx"),
+        route("/trend", "features/trend/screens/trend-list.tsx"),
+        route("/trend/user", "features/trend/screens/trend-user.tsx"),
+        route("/trend/topic", "features/trend/screens/trend-topic.tsx"),
+        route("/challenge", "features/challenge/screens/challenge-list.tsx"),
+        route("/challenge/my", "features/challenge/screens/challenge-my.tsx"),
+        route(
+          "/challenge/:id",
+          "features/challenge/screens/challenge-detail.tsx",
+        ),
+        route("/sns/connect", "features/settings/screens/sns-connect.tsx"),
+        route("/premium", "features/settings/screens/premium.tsx"),
       ]),
       route("/account/edit", "features/users/screens/account.tsx"),
     ]),
   ]),
 
   ...prefix("/legal", [route("/:slug", "features/legal/screens/policy.tsx")]),
-  layout("features/blog/layouts/blog.layout.tsx", [
-    ...prefix("/blog", [
-      index("features/blog/screens/posts.tsx"),
-      route("/:slug", "features/blog/screens/post.tsx"),
-    ]),
-  ]),
 ] satisfies RouteConfig;

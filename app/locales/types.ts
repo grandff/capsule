@@ -8,4 +8,7 @@ export type Translation = {
     kr: string;
     es: string;
   };
+  word: {
+    start: string;
+  };
 };

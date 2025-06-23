@@ -156,98 +156,14 @@ export default function Login({ actionData }: Route.ComponentProps) {
             Sign into your account
           </CardTitle>
           <CardDescription className="text-base">
-            Please enter your details
+            로그인 방법을 선택해주세요.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <Form
-            className="flex w-full flex-col gap-5"
-            method="post"
-            ref={formRef}
-          >
-            <div className="flex flex-col items-start space-y-2">
-              <Label
-                htmlFor="email"
-                className="flex flex-col items-start gap-1"
-              >
-                Email
-              </Label>
-              <Input
-                id="email"
-                name="email"
-                required
-                type="email"
-                placeholder="i.e nico@supaplate.com"
-              />
-              {actionData &&
-              "fieldErrors" in actionData &&
-              actionData.fieldErrors.email ? (
-                <FormErrors errors={actionData.fieldErrors.email} />
-              ) : null}
-            </div>
-            <div className="flex flex-col items-start space-y-2">
-              <div className="flex w-full items-center justify-between">
-                <Label
-                  htmlFor="password"
-                  className="flex flex-col items-start gap-1"
-                >
-                  Password
-                </Label>
-                <Link
-                  to="/auth/forgot-password/reset"
-                  className="text-muted-foreground text-underline hover:text-foreground self-end text-sm underline transition-colors"
-                  tabIndex={-1}
-                  viewTransition
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                required
-                type="password"
-                placeholder="Enter your password"
-              />
-
-              {actionData &&
-              "fieldErrors" in actionData &&
-              actionData.fieldErrors.password ? (
-                <FormErrors errors={actionData.fieldErrors.password} />
-              ) : null}
-            </div>
-            <FormButton label="Log in" className="w-full" />
-            {actionData && "error" in actionData ? (
-              actionData.error === "Email not confirmed" ? (
-                <Alert variant="destructive" className="bg-destructive/10">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Email not confirmed</AlertTitle>
-                  <AlertDescription className="flex flex-col items-start gap-2">
-                    Before signing in, please verify your email.
-                    <Button
-                      variant="outline"
-                      className="text-foreground flex items-center justify-between gap-2"
-                      onClick={onResendClick}
-                    >
-                      Resend confirmation email
-                      {fetcher.state === "submitting" ? (
-                        <Loader2Icon
-                          data-testid="resend-confirmation-email-spinner"
-                          className="size-4 animate-spin"
-                        />
-                      ) : null}
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <FormErrors errors={[actionData.error]} />
-              )
-            ) : null}
-          </Form>
           <SignInButtons />
         </CardContent>
       </Card>
-      <div className="flex flex-col items-center justify-center text-sm">
+      {/* <div className="flex flex-col items-center justify-center text-sm">
         <p className="text-muted-foreground">
           Don't have an account?{" "}
           <Link
@@ -259,7 +175,7 @@ export default function Login({ actionData }: Route.ComponentProps) {
             Sign up
           </Link>
         </p>
-      </div>
+      </div> */}
     </div>
   );
 }

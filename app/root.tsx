@@ -225,7 +225,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
  * 2. Handling Supabase authentication redirects
  * 3. Providing global UI context (Sheet and Dialog components)
  */
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
 
   // Initialize NProgress with spinner for better UX during navigation

@@ -1,3 +1,4 @@
+import { t } from "i18next";
 import {
   AudioWaveformIcon,
   BookOpenIcon,
@@ -11,14 +12,18 @@ import {
   LayoutDashboardIcon,
   LineChartIcon,
   MapIcon,
+  MedalIcon,
   MegaphoneIcon,
+  NotebookPen,
   PieChartIcon,
   RocketIcon,
   Settings2Icon,
   SquareTerminalIcon,
   Target,
+  TrendingUp,
   UsersIcon,
 } from "lucide-react";
+import { Link } from "react-router";
 
 import {
   Sidebar,
@@ -34,102 +39,69 @@ import TeamSwitcher from "./sidebar-team-switcher";
 import SidebarUser from "./sidebar-user";
 
 const data = {
-  teams: [
-    {
-      name: "SalesForge",
-      logo: BuildingIcon,
-      plan: "Enterprise",
-    },
-    {
-      name: "TechCo Solutions",
-      logo: BriefcaseIcon,
-      plan: "Startup",
-    },
-    {
-      name: "GrowthMate",
-      logo: RocketIcon,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
-      title: "Dashboard",
+      title: "오늘의 브랜딩",
       url: "#",
-      icon: LayoutDashboardIcon,
+      icon: NotebookPen,
       isActive: true,
       items: [
         {
-          title: "Overview",
-          url: "/dashboard",
+          title: "새로운 글",
+          url: "/dashboard/write/today",
         },
         {
-          title: "Analytics",
-          url: "#",
-        },
-        {
-          title: "Reports",
-          url: "#",
+          title: "작성한 글 목록",
+          url: "/dashboard/history",
         },
       ],
     },
     {
-      title: "Customers",
+      title: "트렌드",
       url: "#",
-      icon: UsersIcon,
+      icon: TrendingUp,
       items: [
         {
-          title: "Contacts",
-          url: "#",
+          title: "트렌드 분석",
+          url: "/dashboard/trend",
         },
         {
-          title: "Companies",
-          url: "#",
+          title: "나와 비슷한 사람들",
+          url: "/dashboard/trend/user",
         },
         {
-          title: "Deals",
-          url: "#",
+          title: "인기 토픽",
+          url: "/dashboard/trend/topic",
         },
       ],
     },
     {
-      title: "Sales",
+      title: "챌린지",
       url: "#",
-      icon: LineChartIcon,
+      icon: MedalIcon,
       items: [
         {
-          title: "Pipeline",
-          url: "#",
+          title: "진행 중인 챌린지",
+          url: "/dashboard/challenge",
         },
         {
-          title: "Opportunities",
-          url: "#",
-        },
-        {
-          title: "Quotes",
-          url: "#",
-        },
-        {
-          title: "Invoices",
-          url: "#",
+          title: "내 챌린지",
+          url: "/dashboard/challenge/my",
         },
       ],
     },
     {
-      title: "Settings",
+      title: "설정",
       url: "#",
       icon: Settings2Icon,
       items: [
         {
-          title: "Workspace",
-          url: "#",
+          title: "SNS 연결하기",
+          url: "/dashboard/sns/connect",
         },
         {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Integrations",
-          url: "#",
+          title: "요금제 관리",
+          url: "/dashboard/premium",
         },
       ],
     },
@@ -166,11 +138,12 @@ export default function DashboardSidebar({
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <Link to="/dashboard">
+          <h1 className="text-lg font-extrabold">{t("home.title")}</h1>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMain items={data.navMain} />
-        <SidebarProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarUser

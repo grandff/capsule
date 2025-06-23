@@ -7,6 +7,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "~/core/components/ui/sidebar";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import DashboardSidebar from "../components/dashboard-sidebar";
@@ -23,7 +24,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const { user } = loaderData;
-  return (
+  const isMobile = useIsMobile();
+  // 모바일 환경에서는 사이드바 미제공
+  // TODO 모바일 웹에서는 바텀 네비게이션이 제공되야함
+  return isMobile ? (
+    <>
+      <Outlet />
+    </>
+  ) : (
     <SidebarProvider>
       <DashboardSidebar
         user={{
