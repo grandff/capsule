@@ -4,6 +4,8 @@ import {
   sentryReactRouter,
 } from "@sentry/react-router";
 import tailwindcss from "@tailwindcss/vite";
+import fs from "fs";
+import path from "path";
 import { type PluginOption, defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -24,6 +26,11 @@ export default defineConfig((config) => {
   return {
     server: {
       allowedHosts: true,
+      // thread api 연계를 위한 localhost https 설정
+      https: {
+        key: fs.readFileSync(path.resolve(__dirname, "localhost+2-key.pem")),
+        cert: fs.readFileSync(path.resolve(__dirname, "localhost+2.pem")),
+      },
       watch: {
         ignored: [
           "**/*.spec.ts",

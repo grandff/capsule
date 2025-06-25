@@ -1,4 +1,6 @@
+import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -13,7 +15,9 @@ export default function WriteToday() {
   const [selectedTones, setSelectedTones] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [isCreatingPromotion, setIsCreatingPromotion] = useState(false);
 
+  const navigate = useNavigate();
   const maxLength = 100;
   const minLengthForMood = 10;
 
@@ -117,6 +121,42 @@ export default function WriteToday() {
     selectedIndustries.length > 0 &&
     selectedTones.length > 0 &&
     keywords.length > 0;
+
+  // 홍보글 만들기 핸들러
+  const handleCreatePromotion = async () => {
+    if (!canCreatePromotion) return;
+
+    setIsCreatingPromotion(true);
+
+    // TODO: ChatGPT API 호출 로직 구현 필요
+    // const result = await callChatGPTAPI({
+    //   text,
+    //   moods: selectedMoods,
+    //   industries: selectedIndustries,
+    //   tones: selectedTones,
+    //   keywords,
+    // });
+
+    // 5초 대기 (실제로는 API 응답 시간)
+    setTimeout(() => {
+      // TODO: 실제 API 결과를 전달해야 함
+      const mockResult = {
+        content: "생성된 홍보글 내용이 여기에 표시됩니다...",
+        originalText: text,
+        moods: selectedMoods,
+        industries: selectedIndustries,
+        tones: selectedTones,
+        keywords,
+      };
+
+      // 결과 데이터를 URL 파라미터로 전달 (실제로는 세션 스토리지나 상태 관리 사용 권장)
+      const params = new URLSearchParams({
+        result: JSON.stringify(mockResult),
+      });
+
+      navigate(`/dashboard/write/result?${params.toString()}`);
+    }, 5000);
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -270,14 +310,22 @@ export default function WriteToday() {
             {/* 홍보글 만들기 버튼 */}
             <div className="flex justify-center pt-4">
               <Button
-                disabled={!canCreatePromotion}
+                disabled={!canCreatePromotion || isCreatingPromotion}
+                onClick={handleCreatePromotion}
                 className={`px-8 py-3 text-lg font-medium transition-all duration-200 ${
-                  canCreatePromotion
+                  canCreatePromotion && !isCreatingPromotion
                     ? "bg-green-600 text-white shadow-lg hover:bg-green-700"
                     : "cursor-not-allowed bg-gray-300 text-gray-500"
                 }`}
               >
-                홍보글 만들기
+                {isCreatingPromotion ? (
+                  <>
+                    <Loader2Icon className="mr-2 size-5 animate-spin" />
+                    홍보글 생성 중...
+                  </>
+                ) : (
+                  "홍보글 만들기"
+                )}
               </Button>
             </div>
           </div>

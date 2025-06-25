@@ -1,27 +1,12 @@
 import { t } from "i18next";
 import {
-  AudioWaveformIcon,
-  BookOpenIcon,
-  BotIcon,
-  BriefcaseIcon,
-  BuildingIcon,
-  CommandIcon,
-  FrameIcon,
-  GalleryVerticalEndIcon,
   HeartHandshakeIcon,
-  LayoutDashboardIcon,
-  LineChartIcon,
-  MapIcon,
   MedalIcon,
   MegaphoneIcon,
   NotebookPen,
-  PieChartIcon,
-  RocketIcon,
   Settings2Icon,
-  SquareTerminalIcon,
   Target,
   TrendingUp,
-  UsersIcon,
 } from "lucide-react";
 import { Link } from "react-router";
 
@@ -34,8 +19,6 @@ import {
 } from "~/core/components/ui/sidebar";
 
 import SidebarMain from "./sidebar-main";
-import SidebarProjects from "./sidebar-projects";
-import TeamSwitcher from "./sidebar-team-switcher";
 import SidebarUser from "./sidebar-user";
 
 const data = {

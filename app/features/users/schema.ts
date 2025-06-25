@@ -1,21 +1,28 @@
 /**
  * User Profile Schema
- * 
+ *
  * This file defines the database schema for user profiles and sets up
  * Supabase Row Level Security (RLS) policies to control data access.
  */
 import { sql } from "drizzle-orm";
-import { boolean, pgPolicy, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgPolicy,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
 import { timestamps } from "~/core/db/helpers.server";
 
 /**
  * Profiles Table
- * 
+ *
  * Stores additional user profile information beyond the core auth data.
  * Links to Supabase auth.users table via profile_id foreign key.
- * 
+ *
  * Includes Row Level Security (RLS) policies to ensure users can only
  * access and modify their own profile data.
  */
@@ -31,7 +38,9 @@ export const profiles = pgTable(
       }),
     name: text().notNull(),
     avatar_url: text(),
-    marketing_consent: boolean("marketing_consent").notNull().default(false),
+    threads_connect: boolean().default(false),
+    threads_access_token: text(),
+    threads_expires_at: timestamp(),
     // Adds created_at and updated_at timestamp columns
     ...timestamps,
   },

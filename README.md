@@ -4,13 +4,16 @@
 
 - [x] 네비게이션 구현 (헤더, 사이드바 등 포함)
   - [ ] 모바일 구동을 위한 vercel 사전 배포
-  - [ ] 모바일은 앱으로 구성해야함 (앱 환경설정 후 bottom navigation 구현 )
+  - [ ] 모바일은 앱으로 구성해야함 (앱 환경설정 후 bottom
+        navigation 구현 )
+  - [ ] 모바일은 로그인 - 대시보드 형태로 구성
 - [x] 핵심 레이아웃 구현 (랜딩, 로그인, 대시보드 등)
   - 온보딩화면과 대시보드 화면을 분리해서 만들기
   - [x] 랜딩 페이지
   - [x] 로그인 페이지 : 이메일주소 제거, 테이블 구조 확인
   - [x] 대시 보드
   - [x] 새로운 글
+  - [x] 결과 정보
   - [x] 작성한 글 목록
   - [x] 트렌드 분석
   - [x] 나와 비슷한 사람들
@@ -20,10 +23,26 @@
   - [x] SNS 연결하기
   - [x] 요금제 관리
 - [x] `routes.ts`에 정의된 전체 페이지 중 **첫 1/3**에 해당하는 페이지 구현
-
-## Overview
-
-Supaplate is a production-ready, full-stack web application template built with React Router, Supabase, and Drizzle ORM. It provides a solid foundation for building modern web applications with authentication, payments, internationalization, and more.
+- [ ] 쓰레드 계정 연결 기능 구현하기
+  - [x] 쓰레드에 계정 연결
+  - [x] 토큰 발급
+  - [ ] 토큰 조회
+  - [ ] 토큰 재발급
+  - [x] 데이터 저장
+  - [x] 연결 해제 기능
+  - [x] 디자인 정비
+  - [ ] 컴포넌트 분리
+- [ ] UI 점검하기
+  - [ ] 새로운 글 **우선 - 과제제출**
+  - [ ] 작성한 글 목록 **우선 - 과제제출**
+  - [ ] 대시보드 **우선 - 과제제출**
+  - [ ] 트렌드 분석
+  - [ ] 나와 비슷한 사람들
+  - [ ] 인기토픽
+  - [ ] 진행 중인 챌린지
+  - [ ] 내 챌린지
+  - [x] SNS 연결하기 **우선 - 과제제출**
+  - [ ] 요금제 관리
 
 ## Command
 

@@ -139,13 +139,13 @@ function AuthButtons() {
       </Button>
 
       {/* Sign up button (more prominent) */}
-      <Button variant="default" asChild>
+      {/* <Button variant="default" asChild>
         <SheetClose asChild>
           <Link to="/join" viewTransition>
             Sign up
           </Link>
         </SheetClose>
-      </Button>
+      </Button> */}
     </>
   );
 }

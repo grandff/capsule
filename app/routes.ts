@@ -28,7 +28,11 @@ export default [
     ...prefix("/settings", [
       route("/theme", "features/settings/api/set-theme.tsx"),
       route("/locale", "features/settings/api/set-locale.tsx"),
-      route("/threads-auth", "features/settings/api/threads-auth.tsx"),
+      ...prefix("/threads-auth", [
+        index("features/settings/api/threads-auth.tsx"),
+        route("/callback", "features/settings/api/threads-callback.tsx"),
+      ]),
+      route("/disconnect", "features/settings/api/disconnect.tsx"),
     ]),
     ...prefix("/users", [
       index("features/users/api/delete-account.tsx"),
@@ -93,6 +97,7 @@ export default [
         index("features/users/screens/dashboard.tsx"),
         route("/payments", "features/payments/screens/payments.tsx"),
         route("/write/today", "features/write/screens/write-today.tsx"),
+        route("/write/result", "features/write/screens/write-result.tsx"),
         route("/history", "features/history/screens/history-list.tsx"),
         route("/history/:id", "features/history/screens/history-detail.tsx"),
         route("/trend", "features/trend/screens/trend-list.tsx"),

@@ -26,7 +26,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const { user } = loaderData;
   const isMobile = useIsMobile();
   // 모바일 환경에서는 사이드바 미제공
-  // TODO 모바일 웹에서는 바텀 네비게이션이 제공되야함
+  // TODO 모바일 웹에서는 앱화면으로 이동해야함
   return isMobile ? (
     <>
       <Outlet />
@@ -41,7 +41,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
         }}
       />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <header className="flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
           </div>

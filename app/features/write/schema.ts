@@ -29,10 +29,13 @@ export const threads = pgTable("threads", {
     .generatedAlwaysAsIdentity(),
   short_text: text().notNull(),
   thread: text().notNull(),
-  property_id: uuid().references(() => properties.property_id, {
-    onDelete: "cascade",
-  }),
-  keyword_id: uuid().references(() => keywords.keyword_id, {
+  property_id: bigint({ mode: "number" }).references(
+    () => properties.property_id,
+    {
+      onDelete: "cascade",
+    },
+  ),
+  keyword_id: bigint({ mode: "number" }).references(() => keywords.keyword_id, {
     onDelete: "cascade",
   }),
   target_type: targetType().notNull(),
