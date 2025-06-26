@@ -48,6 +48,7 @@ export const threads = pgTable("threads", {
   like_cnt: integer().notNull().default(0),
   comment_cnt: integer().notNull().default(0),
   view_cnt: integer().notNull().default(0),
+  now_follow_cnt: integer().notNull().default(0),
   created_at: timestamp().notNull().defaultNow(),
   updated_at: timestamp().notNull().defaultNow(),
 });
