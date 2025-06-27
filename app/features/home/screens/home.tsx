@@ -13,6 +13,8 @@
  */
 import type { Route } from "./+types/home";
 
+import { Marquee } from "components/magicui/marquee";
+import { SparklesText } from "components/magicui/sparkles-text";
 import { Apple, Monitor, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -65,6 +67,8 @@ export const meta: Route.MetaFunction = ({ data }) => {
 export async function loader({ request }: Route.LoaderArgs) {
   // Get a translation function for the user's locale from the request
   const t = await i18next.getFixedT(request);
+
+  // TODO 로그인 된 상태면 대시보드로 리다이렉트
 
   // Return translated strings for use in both the component and meta function
   return {
@@ -225,9 +229,11 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center gap-2.5">
       {/* Main headline with responsive typography */}
-      <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
-        {t("home.title")}
-      </h1>
+      <SparklesText>
+        <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
+          {t("home.title")}
+        </h1>
+      </SparklesText>
 
       {/* Subtitle */}
       <h2 className="mt-5 text-2xl">{t("home.subtitle")}</h2>
@@ -304,29 +310,83 @@ export default function Home() {
             : "translate-y-10 opacity-0"
         }`}
       >
-        <h2 className="mb-8 text-center text-3xl font-bold">사용자 후기</h2>
-        <div className="flex gap-6 overflow-hidden">
-          <div className="animate-scroll flex gap-6">
-            {[...reviews, ...reviews].map((review, index) => (
+        <h2 className="mb-8 text-center text-3xl font-bold text-gray-900 dark:text-white">
+          사용자 후기
+        </h2>
+        <div className="space-y-6">
+          {/* 첫 번째 줄 - 왼쪽으로 이동 */}
+          <Marquee className="py-4" pauseOnHover>
+            {reviews.slice(0, 2).map((review) => (
               <Card
-                key={`${review.id}-${index}`}
-                className="min-w-[300px] flex-shrink-0"
+                key={review.id}
+                className="mx-2 max-w-[160px] min-w-[160px] flex-shrink-0 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
               >
-                <CardContent className="p-6">
-                  <div className="mb-4 flex items-center gap-3">
-                    <Avatar>
+                <CardContent className="p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
                       <AvatarImage src={review.avatar} />
-                      <AvatarFallback>{review.name[0]}</AvatarFallback>
+                      <AvatarFallback className="bg-gray-100 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        {review.name[0]}
+                      </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="font-semibold">{review.name}</h3>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-xs font-semibold text-gray-900 dark:text-white">
+                        {review.name}
+                      </h3>
                     </div>
                   </div>
-                  <p className="text-gray-600">{review.content}</p>
+                  <p
+                    className="overflow-hidden text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {review.content}
+                  </p>
                 </CardContent>
               </Card>
             ))}
-          </div>
+          </Marquee>
+
+          {/* 두 번째 줄 - 오른쪽으로 이동 */}
+          <Marquee className="py-4" pauseOnHover reverse>
+            {reviews.slice(2, 4).map((review) => (
+              <Card
+                key={review.id}
+                className="mx-2 max-w-[160px] min-w-[160px] flex-shrink-0 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+              >
+                <CardContent className="p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={review.avatar} />
+                      <AvatarFallback className="bg-gray-100 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        {review.name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-xs font-semibold text-gray-900 dark:text-white">
+                        {review.name}
+                      </h3>
+                    </div>
+                  </div>
+                  <p
+                    className="overflow-hidden text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {review.content}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </Marquee>
         </div>
       </div>
 

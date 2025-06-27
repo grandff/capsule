@@ -33,6 +33,7 @@ export default [
         route("/callback", "features/settings/api/threads-callback.tsx"),
       ]),
       route("/disconnect", "features/settings/api/disconnect.tsx"),
+      route("/setting", "features/settings/api/setting.tsx"),
     ]),
     ...prefix("/users", [
       index("features/users/api/delete-account.tsx"),
@@ -111,6 +112,7 @@ export default [
         ),
         route("/sns/connect", "features/settings/screens/sns-connect.tsx"),
         route("/premium", "features/settings/screens/premium.tsx"),
+        route("/setting", "features/settings/screens/setting.tsx"),
       ]),
       route("/account/edit", "features/users/screens/account.tsx"),
     ]),

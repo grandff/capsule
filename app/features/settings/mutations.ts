@@ -63,3 +63,31 @@ export async function deleteAccessToken(
     throw error;
   }
 }
+
+// 설정 저장
+export async function saveSetting(
+  client: SupabaseClient<Database>,
+  {
+    userId,
+    theme,
+    fontSize,
+    blindMode,
+  }: {
+    userId: string;
+    theme: string;
+    fontSize: string;
+    blindMode: boolean;
+  },
+) {
+  const { data, error } = await client.from("setting").upsert({
+    profile_id: userId,
+    theme,
+    font_size: fontSize,
+    color_blind_mode: blindMode,
+  });
+
+  if (error) {
+    console.error("Error saving setting:", error);
+    throw error;
+  }
+}

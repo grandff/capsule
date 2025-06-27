@@ -1,3 +1,6 @@
+import type { PromptTemplate } from "../schema";
+
+import { AnimatedCircularProgressBar } from "components/magicui/animated-circular-progress-bar";
 import { ChevronDownIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -25,6 +28,9 @@ export default function WriteToday() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isCreatingPromotion, setIsCreatingPromotion] = useState(false);
   const [maxSelectionError, setMaxSelectionError] = useState<string>("");
+  const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(
+    null,
+  );
 
   const navigate = useNavigate();
   const maxLength = 100;
@@ -285,24 +291,84 @@ export default function WriteToday() {
 
     setIsCreatingPromotion(true);
 
-    // TODO: ChatGPT API 호출 로직 구현 필요
-    // const result = await callChatGPTAPI({
-    //   text,
-    //   moods: selectedMoods,
-    //   industries: selectedIndustries,
-    //   tones: selectedTones,
-    //   keywords,
-    //   intents: selectedIntents,
-    //   length: selectedLength,
-    //   timeframe: selectedTimeframe,
-    //   weather: selectedWeather,
-    // });
+    try {
+      // 프롬프트 추천 또는 기본 프롬프트 사용
+      const recommendedPrompt = selectedPrompt || {
+        id: "social-media-post-basic",
+        name: "소셜미디어 기본 포스트",
+        description: "일반적인 소셜미디어 포스트를 생성하는 기본 프롬프트",
+        type: "SOCIAL_MEDIA_POST" as const,
+        category: "BASIC" as const,
+        template: "",
+        variables: [],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    // 5초 대기 (실제로는 API 응답 시간)
-    setTimeout(() => {
-      // TODO: 실제 API 결과를 전달해야 함
+      // API 요청 데이터 준비
+      const requestData = {
+        promptId: recommendedPrompt.id,
+        variables: {
+          userText: text,
+          moods: selectedMoods.join(", "),
+          industries: selectedIndustries.join(", "),
+          tones: selectedTones.join(", "),
+          keywords: keywords.join(", "),
+          ...(selectedIntents.length > 0 && {
+            intents: selectedIntents.join(", "),
+          }),
+          ...(selectedLength && { length: selectedLength }),
+          ...(selectedTimeframe && { timeframe: selectedTimeframe }),
+          ...(selectedWeather && { weather: selectedWeather }),
+        },
+        userText: text,
+        settings: {
+          moods: selectedMoods,
+          industries: selectedIndustries,
+          tones: selectedTones,
+          keywords,
+          intents: selectedIntents,
+          length: selectedLength,
+          timeframe: selectedTimeframe,
+          weather: selectedWeather,
+        },
+      };
+
+      // 최소 5초 대기
+      const startTime = Date.now();
+      const minWaitTime = 5000; // 5초
+
+      // API 호출
+      const response = await fetch("/dashboard/write/api/generate-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "홍보글 생성 중 오류가 발생했습니다.");
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || "홍보글 생성에 실패했습니다.");
+      }
+
+      // 최소 5초 대기 보장
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < minWaitTime) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, minWaitTime - elapsedTime),
+        );
+      }
+
+      // 결과 데이터 준비
       const mockResult = {
-        content: "생성된 홍보글 내용이 여기에 표시됩니다...",
+        content: result.content,
         originalText: text,
         moods: selectedMoods,
         industries: selectedIndustries,
@@ -312,6 +378,8 @@ export default function WriteToday() {
         length: selectedLength,
         timeframe: selectedTimeframe,
         weather: selectedWeather,
+        promptUsed: result.promptUsed,
+        metadata: result.metadata,
       };
 
       // 결과 데이터를 URL 파라미터로 전달 (실제로는 세션 스토리지나 상태 관리 사용 권장)
@@ -320,7 +388,16 @@ export default function WriteToday() {
       });
 
       navigate(`/dashboard/write/result?${params.toString()}`);
-    }, 5000);
+    } catch (error) {
+      console.error("홍보글 생성 오류:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "홍보글 생성 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setIsCreatingPromotion(false);
+    }
   };
 
   return (
@@ -763,24 +840,36 @@ export default function WriteToday() {
 
               {/* 홍보글 만들기 버튼 */}
               <div className="flex justify-center pt-6">
-                <Button
-                  disabled={!canCreatePromotion || isCreatingPromotion}
-                  onClick={handleCreatePromotion}
-                  className={`px-12 py-4 text-lg font-semibold transition-all duration-300 ${
-                    canCreatePromotion && !isCreatingPromotion
-                      ? "bg-green-600 text-white shadow-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-                      : "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
-                  }`}
-                >
-                  {isCreatingPromotion ? (
-                    <>
-                      <Loader2Icon className="mr-2 size-5 animate-spin" />
+                {isCreatingPromotion ? (
+                  <div className="flex flex-col items-center space-y-4">
+                    <AnimatedCircularProgressBar
+                      value={100}
+                      max={100}
+                      min={0}
+                      gaugePrimaryColor="#10b981"
+                      gaugeSecondaryColor="#e5e7eb"
+                      className="size-32"
+                    />
+                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
                       홍보글 생성 중...
-                    </>
-                  ) : (
-                    "홍보글 만들기"
-                  )}
-                </Button>
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      최소 5초 정도 소요됩니다
+                    </p>
+                  </div>
+                ) : (
+                  <Button
+                    disabled={!canCreatePromotion}
+                    onClick={handleCreatePromotion}
+                    className={`px-12 py-4 text-lg font-semibold transition-all duration-300 ${
+                      canCreatePromotion
+                        ? "bg-green-600 text-white shadow-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                        : "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
+                    }`}
+                  >
+                    홍보글 만들기
+                  </Button>
+                )}
               </div>
             </div>
           </div>

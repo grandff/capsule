@@ -37,6 +37,7 @@ export const profiles = pgTable(
         onDelete: "cascade",
       }),
     name: text().notNull(),
+    marketing_consent: boolean().notNull().default(false),
     avatar_url: text(),
     threads_connect: boolean().default(false),
     threads_access_token: text(),
@@ -62,6 +63,56 @@ export const profiles = pgTable(
     }),
     // RLS Policy: Users can only view their own profile
     pgPolicy("select-profile-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+  ],
+);
+
+export const setting = pgTable(
+  "setting",
+  {
+    // Primary key that references the Supabase auth.users id
+    // Using CASCADE ensures profile is deleted when user is deleted
+    profile_id: uuid()
+      .notNull()
+      .primaryKey()
+      .references(() => profiles.profile_id, {
+        onDelete: "cascade",
+      }),
+    theme: text().notNull().default("dark"),
+    font_size: text().notNull().default("default"),
+    color_blind_mode: boolean().notNull().default(false),
+    // Adds created_at and updated_at timestamp columns
+    ...timestamps,
+  },
+  (table) => [
+    // RLS Policy: Users can only insert their own settings
+    pgPolicy("insert-setting-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own settings
+    pgPolicy("edit-setting-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own settings
+    pgPolicy("delete-setting-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only view their own settings
+    pgPolicy("select-setting-policy", {
       for: "select",
       to: authenticatedRole,
       as: "permissive",

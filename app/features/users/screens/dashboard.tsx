@@ -1,5 +1,6 @@
 import type { Route } from "./+types/dashboard";
 
+import { NumberTicker } from "components/magicui/number-ticker";
 import {
   ArrowRight,
   BarChart3,
@@ -201,19 +202,30 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-5 dark:bg-gray-800">
               <div className="text-center">
                 <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {averages.posts}개
+                  <NumberTicker
+                    className="text-lg font-bold text-blue-600 dark:text-blue-400"
+                    value={averages.posts}
+                  />{" "}
+                  개
                 </div>
                 <div className="text-muted-foreground text-xs">평균 글 수</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {averages.likes}
+                  <NumberTicker
+                    className="text-lg font-bold text-red-600 dark:text-red-400"
+                    value={averages.likes}
+                  />
                 </div>
                 <div className="text-muted-foreground text-xs">평균 좋아요</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                  +{averages.followers}
+                  <NumberTicker
+                    className="text-lg font-bold text-green-600 dark:text-green-400"
+                    value={averages.followers}
+                  />{" "}
+                  +
                 </div>
                 <div className="text-muted-foreground text-xs">
                   평균 팔로워 증가
@@ -221,13 +233,19 @@ export default function Dashboard() {
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                  {averages.shares}
+                  <NumberTicker
+                    className="text-lg font-bold text-purple-600 dark:text-purple-400"
+                    value={averages.shares}
+                  />
                 </div>
                 <div className="text-muted-foreground text-xs">평균 공유</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                  {averages.reposts}
+                  <NumberTicker
+                    className="text-lg font-bold text-orange-600 dark:text-orange-400"
+                    value={averages.reposts}
+                  />
                 </div>
                 <div className="text-muted-foreground text-xs">
                   평균 리포스트

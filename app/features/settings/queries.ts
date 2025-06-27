@@ -51,7 +51,6 @@ export async function getConnectionStatus(
     .single();
 
   if (error) {
-    console.error("Error fetching connection status:", error);
     return { isConnected: false, isExpired: false };
   }
 
@@ -73,3 +72,21 @@ export async function getConnectionStatus(
 }
 
 // TODO 토큰 만료 확인
+
+// 현재 설정 정보 확인
+export async function getSetting(
+  client: SupabaseClient<Database>,
+  userId: string,
+) {
+  const { data, error } = await client
+    .from("setting")
+    .select("theme, font_size, color_blind_mode")
+    .eq("profile_id", userId)
+    .single();
+
+  if (error) {
+    return null;
+  }
+
+  return data;
+}

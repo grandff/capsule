@@ -86,6 +86,10 @@ const data = {
           title: "요금제 관리",
           url: "/dashboard/premium",
         },
+        {
+          title: "설정",
+          url: "/dashboard/setting",
+        },
       ],
     },
   ],

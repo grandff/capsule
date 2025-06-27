@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1744715748834,
-      "tag": "0000_worried_vision",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1744715791562,
-      "tag": "0001_great_junta",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1750662497966,
-      "tag": "0002_glossy_war_machine",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1750807713543,
-      "tag": "0003_violet_dragon_lord",
+      "when": 1750986764758,
+      "tag": "0000_left_serpent_society",
       "breakpoints": true
     }
   ]

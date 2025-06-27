@@ -182,12 +182,48 @@ export type Database = {
         }
         Relationships: []
       }
+      setting: {
+        Row: {
+          color_blind_mode: boolean
+          created_at: string
+          font_size: string
+          profile_id: string
+          theme: string
+          updated_at: string
+        }
+        Insert: {
+          color_blind_mode?: boolean
+          created_at?: string
+          font_size?: string
+          profile_id: string
+          theme?: string
+          updated_at?: string
+        }
+        Update: {
+          color_blind_mode?: boolean
+          created_at?: string
+          font_size?: string
+          profile_id?: string
+          theme?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setting_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       threads: {
         Row: {
           comment_cnt: number
           created_at: string
           keyword_id: number | null
           like_cnt: number
+          now_follow_cnt: number
           profile_id: string | null
           property_id: number | null
           result_id: string | null
@@ -205,6 +241,7 @@ export type Database = {
           created_at?: string
           keyword_id?: number | null
           like_cnt?: number
+          now_follow_cnt?: number
           profile_id?: string | null
           property_id?: number | null
           result_id?: string | null
@@ -222,6 +259,7 @@ export type Database = {
           created_at?: string
           keyword_id?: number | null
           like_cnt?: number
+          now_follow_cnt?: number
           profile_id?: string | null
           property_id?: number | null
           result_id?: string | null
