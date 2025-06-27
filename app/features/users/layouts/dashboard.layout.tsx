@@ -28,11 +28,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const isMobile = useIsMobile();
   // 모바일 환경에서는 사이드바 미제공
   // TODO 모바일 웹에서는 앱화면으로 이동해야함
-  return isMobile ? (
-    <SettingsProvider>
-      <Outlet />
-    </SettingsProvider>
-  ) : (
+  return (
     <SettingsProvider>
       <SidebarProvider>
         <DashboardSidebar

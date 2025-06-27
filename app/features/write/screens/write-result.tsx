@@ -48,17 +48,17 @@ export default function WriteResult() {
       } catch (error) {
         console.error("Failed to parse result data:", error);
         // 파싱 실패 시 홈으로 리다이렉트
-        navigate("/write/today");
+        navigate("/dashboard/write/today");
       }
     } else {
       // 결과 데이터가 없으면 홈으로 리다이렉트
-      navigate("/write/today");
+      navigate("/dashboard/write/today");
     }
   }, [searchParams, navigate]);
 
   // 다시 작성하기 핸들러
   const handleRewrite = () => {
-    navigate("/write/today");
+    navigate("/dashboard/write/today");
   };
 
   // 업로드하기 핸들러

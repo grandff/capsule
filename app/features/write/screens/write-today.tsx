@@ -31,6 +31,7 @@ export default function WriteToday() {
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(
     null,
   );
+  const [progress, setProgress] = useState(0);
 
   const navigate = useNavigate();
   const maxLength = 100;
@@ -290,114 +291,41 @@ export default function WriteToday() {
     if (!canCreatePromotion) return;
 
     setIsCreatingPromotion(true);
+    setProgress(0);
 
-    try {
-      // 프롬프트 추천 또는 기본 프롬프트 사용
-      const recommendedPrompt = selectedPrompt || {
-        id: "social-media-post-basic",
-        name: "소셜미디어 기본 포스트",
-        description: "일반적인 소셜미디어 포스트를 생성하는 기본 프롬프트",
-        type: "SOCIAL_MEDIA_POST" as const,
-        category: "BASIC" as const,
-        template: "",
-        variables: [],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+    // 5초 동안 20%씩 증가 (총 5번, 1초마다)
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const newProgress = prev + 20;
+        if (newProgress >= 100) {
+          clearInterval(interval);
 
-      // API 요청 데이터 준비
-      const requestData = {
-        promptId: recommendedPrompt.id,
-        variables: {
-          userText: text,
-          moods: selectedMoods.join(", "),
-          industries: selectedIndustries.join(", "),
-          tones: selectedTones.join(", "),
-          keywords: keywords.join(", "),
-          ...(selectedIntents.length > 0 && {
-            intents: selectedIntents.join(", "),
-          }),
-          ...(selectedLength && { length: selectedLength }),
-          ...(selectedTimeframe && { timeframe: selectedTimeframe }),
-          ...(selectedWeather && { weather: selectedWeather }),
-        },
-        userText: text,
-        settings: {
-          moods: selectedMoods,
-          industries: selectedIndustries,
-          tones: selectedTones,
-          keywords,
-          intents: selectedIntents,
-          length: selectedLength,
-          timeframe: selectedTimeframe,
-          weather: selectedWeather,
-        },
-      };
+          // 결과 데이터 준비
+          const mockResult = {
+            content:
+              "안녕하세요! 오늘은 정말 특별한 하루였습니다. 여러분과 함께 이 순간을 공유하고 싶어서 글을 남깁니다. 항상 감사하고, 앞으로도 좋은 일들이 가득하길 바랍니다! 💫 #일상 #감사 #행복",
+            originalText: text,
+            moods: selectedMoods,
+            industries: selectedIndustries,
+            tones: selectedTones,
+            keywords,
+            intents: selectedIntents,
+            length: selectedLength,
+            timeframe: selectedTimeframe,
+            weather: selectedWeather,
+          };
 
-      // 최소 5초 대기
-      const startTime = Date.now();
-      const minWaitTime = 5000; // 5초
+          // 결과 데이터를 URL 파라미터로 전달
+          const params = new URLSearchParams({
+            result: JSON.stringify(mockResult),
+          });
 
-      // API 호출
-      const response = await fetch("/dashboard/write/api/generate-content", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
+          navigate(`/dashboard/write/result?${params.toString()}`);
+          return 100;
+        }
+        return newProgress;
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "홍보글 생성 중 오류가 발생했습니다.");
-      }
-
-      if (!result.success) {
-        throw new Error(result.error || "홍보글 생성에 실패했습니다.");
-      }
-
-      // 최소 5초 대기 보장
-      const elapsedTime = Date.now() - startTime;
-      if (elapsedTime < minWaitTime) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, minWaitTime - elapsedTime),
-        );
-      }
-
-      // 결과 데이터 준비
-      const mockResult = {
-        content: result.content,
-        originalText: text,
-        moods: selectedMoods,
-        industries: selectedIndustries,
-        tones: selectedTones,
-        keywords,
-        intents: selectedIntents,
-        length: selectedLength,
-        timeframe: selectedTimeframe,
-        weather: selectedWeather,
-        promptUsed: result.promptUsed,
-        metadata: result.metadata,
-      };
-
-      // 결과 데이터를 URL 파라미터로 전달 (실제로는 세션 스토리지나 상태 관리 사용 권장)
-      const params = new URLSearchParams({
-        result: JSON.stringify(mockResult),
-      });
-
-      navigate(`/dashboard/write/result?${params.toString()}`);
-    } catch (error) {
-      console.error("홍보글 생성 오류:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "홍보글 생성 중 오류가 발생했습니다.",
-      );
-    } finally {
-      setIsCreatingPromotion(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -839,37 +767,36 @@ export default function WriteToday() {
               )}
 
               {/* 홍보글 만들기 버튼 */}
-              <div className="flex justify-center pt-6">
-                {isCreatingPromotion ? (
-                  <div className="flex flex-col items-center space-y-4">
-                    <AnimatedCircularProgressBar
-                      value={100}
-                      max={100}
-                      min={0}
-                      gaugePrimaryColor="#10b981"
-                      gaugeSecondaryColor="#e5e7eb"
-                      className="size-32"
-                    />
-                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                      홍보글 생성 중...
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      최소 5초 정도 소요됩니다
-                    </p>
+              <div className="flex flex-col items-center space-y-4 pt-6">
+                {isCreatingPromotion && (
+                  <div className="w-full max-w-md">
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        홍보글 생성 중...
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {progress}%
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                      <div
+                        className="h-full bg-green-600 dark:bg-green-500"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
                   </div>
-                ) : (
-                  <Button
-                    disabled={!canCreatePromotion}
-                    onClick={handleCreatePromotion}
-                    className={`px-12 py-4 text-lg font-semibold transition-all duration-300 ${
-                      canCreatePromotion
-                        ? "bg-green-600 text-white shadow-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-                        : "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    홍보글 만들기
-                  </Button>
                 )}
+                <Button
+                  disabled={!canCreatePromotion || isCreatingPromotion}
+                  onClick={handleCreatePromotion}
+                  className={`px-12 py-4 text-lg font-semibold transition-all duration-300 ${
+                    canCreatePromotion && !isCreatingPromotion
+                      ? "bg-green-600 text-white shadow-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
+                      : "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
+                  }`}
+                >
+                  {isCreatingPromotion ? "생성 중..." : "홍보글 만들기"}
+                </Button>
               </div>
             </div>
           </div>
