@@ -411,7 +411,7 @@ export default function WriteToday() {
           <div className="mx-auto max-w-4xl p-8">
             <div className="mb-8 text-center">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                홍보글 스타일 설정
+                스타일 설정
               </h2>
               <p className="mt-2 text-gray-600 dark:text-gray-400">
                 원하는 분위기와 스타일을 선택해주세요
@@ -423,15 +423,15 @@ export default function WriteToday() {
               <div>
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    분위기
+                    어떤 분위기로 작성할까요?
                   </h3>
                   {selectedMoods.length < MAX_MOODS ? (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {MAX_MOODS - selectedMoods.length}개 더 선택 가능
+                      {MAX_MOODS - selectedMoods.length}개 더 선택 가능해요!
                     </span>
                   ) : (
                     <span className="text-sm text-red-500 dark:text-red-400">
-                      최대 선택 완료
+                      모두 선택했어요!
                     </span>
                   )}
                 </div>
@@ -475,16 +475,16 @@ export default function WriteToday() {
               <div>
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    산업군
+                    어떤 분야의 이야기인가요?
                   </h3>
                   {selectedIndustries.length < MAX_INDUSTRIES ? (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {MAX_INDUSTRIES - selectedIndustries.length}개 더 선택
-                      가능
+                      가능해요!
                     </span>
                   ) : (
                     <span className="text-sm text-red-500 dark:text-red-400">
-                      최대 선택 완료
+                      모두 선택했어요!
                     </span>
                   )}
                 </div>
@@ -531,15 +531,15 @@ export default function WriteToday() {
               <div>
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    톤
+                    어떤 말투/느낌으로 쓸까요?
                   </h3>
                   {selectedTones.length < MAX_TONES ? (
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {MAX_TONES - selectedTones.length}개 더 선택 가능
+                      {MAX_TONES - selectedTones.length}개 더 선택 가능해요!
                     </span>
                   ) : (
                     <span className="text-sm text-red-500 dark:text-red-400">
-                      최대 선택 완료
+                      모두 선택했어요!
                     </span>
                   )}
                 </div>
@@ -591,7 +591,7 @@ export default function WriteToday() {
               {/* 키워드 입력 */}
               <div>
                 <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                  핵심 키워드
+                  꼭 들어갔으면 하는 단어가 있나요?
                 </h3>
                 <div className="mb-4 flex gap-3">
                   <Input
@@ -654,7 +654,7 @@ export default function WriteToday() {
                   {/* 의도 선택 */}
                   <div>
                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                      의도
+                      어떤 목적/의도로 쓸까요?
                     </h3>
                     <div className="flex flex-wrap gap-3">
                       {intentOptions.map((intent) => (
@@ -681,7 +681,7 @@ export default function WriteToday() {
                   {/* 글 길이 선택 */}
                   <div>
                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                      글 길이
+                      얼마나 길게 쓸까요?
                     </h3>
                     <div className="flex flex-wrap gap-3">
                       {lengthOptions.map((length) => (
@@ -706,7 +706,7 @@ export default function WriteToday() {
                   {/* 시점/상황 설정 */}
                   <div>
                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                      시점/상황
+                      언제/어떤 상황에 맞는 글인가요?
                     </h3>
                     <div className="flex flex-wrap gap-3">
                       {timeframeOptions.map((timeframe) => (
@@ -733,7 +733,7 @@ export default function WriteToday() {
                   {/* 날씨 선택 */}
                   <div>
                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                      날씨
+                      어떤 날씨에 어울리는 글인가요?
                     </h3>
                     <div className="flex flex-wrap gap-3">
                       {weatherOptions.map((weather) => (

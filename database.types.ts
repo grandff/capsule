@@ -123,34 +123,25 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          marketing_consent: boolean
           name: string
-          noti_yn: string | null
           profile_id: string
-          threads_access_token: string | null
-          threads_connect: boolean | null
-          threads_expires_at: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          marketing_consent?: boolean
           name: string
-          noti_yn?: string | null
           profile_id: string
-          threads_access_token?: string | null
-          threads_connect?: boolean | null
-          threads_expires_at?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          marketing_consent?: boolean
           name?: string
-          noti_yn?: string | null
           profile_id?: string
-          threads_access_token?: string | null
-          threads_connect?: boolean | null
-          threads_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -210,6 +201,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "setting_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      sns_profiles: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string | null
+          profile_id: string
+          target_type: Database["public"]["Enums"]["target_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string | null
+          profile_id: string
+          target_type: Database["public"]["Enums"]["target_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string | null
+          profile_id?: string
+          target_type?: Database["public"]["Enums"]["target_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sns_profiles_profile_id_profiles_profile_id_fk"
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"

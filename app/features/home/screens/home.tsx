@@ -201,42 +201,43 @@ export default function Home() {
   // 사용 방법 데이터
   const howToUse = [
     {
-      title: "SNS 플랫폼 연결",
-      description:
-        "스레드, X 등 홍보하고 싶은 SNS 플랫폼을 연결하세요. 한 번 연결하면 계속 사용할 수 있습니다.",
+      title: "내가 홍보하고 싶은 SNS에 연결해보세요",
+      description: "Thread, X 등 홍보하고 싶은 SNS를 연결하면,",
+      description2: "Capsule에서 자동으로 업로드해드려요.",
       image: "/nft.jpg",
     },
     {
-      title: "브랜드 정보 입력",
-      description:
-        "홍보하고 싶은 브랜드나 서비스의 특징, 타겟 고객, 핵심 메시지를 간단히 입력하세요.",
+      title: "나만의 스타일을 선택해보세요",
+      description: "분위기, 톤 등 나만의 스타일을 선택하면,",
+      description2: "Casuple이 매력적인 카피라이터가 되어드려요.",
       image: "/nft-2.jpg",
     },
     {
-      title: "홍보글 생성",
-      description:
-        "원하는 분위기와 키워드를 선택하면 AI가 브랜드에 최적화된 고품질 홍보글을 자동으로 생성합니다.",
+      title: "모바일과 PC, 어디서나 사용해 보세요",
+      description: "환경과 장소에 구애받지 않고,",
+      description2: "어디서나 사용해 보세요.",
       image: "/nft.jpg",
-    },
-    {
-      title: "자동 업로드",
-      description:
-        "생성된 홍보글이 연결된 SNS 플랫폼에 자동으로 업로드되어 브랜드 홍보가 시작됩니다.",
-      image: "/nft-2.jpg",
     },
   ];
 
   return (
     <div className="flex flex-col items-center justify-center gap-2.5">
       {/* Main headline with responsive typography */}
-      <SparklesText>
+
+      <span>
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
-          {t("home.title")}
+          브랜드 홍보, 어렵고 귀찮았죠?
         </h1>
-      </SparklesText>
+        <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
+          <SparklesText className="inline-block">Capsule</SparklesText>이 대신
+          써줄게요.
+        </h1>
+      </span>
 
       {/* Subtitle */}
-      <h2 className="mt-5 text-2xl">{t("home.subtitle")}</h2>
+      <h2 className="mt-5 text-2xl text-gray-500 dark:text-gray-300">
+        3번의 클릭이면, 글쓰기부터 업로드까지 끝!
+      </h2>
 
       {/* 시작 버튼 */}
       <Button
@@ -342,9 +343,6 @@ export default function Home() {
             : "translate-y-10 opacity-0"
         }`}
       >
-        <h2 className="mb-6 text-center text-3xl font-bold text-gray-800">
-          AI 홍보글 생성 과정
-        </h2>
         <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-gradient-to-br from-gray-200 to-gray-300">
           <div className="text-center">
             <div className="mb-4 text-6xl">🎥</div>
@@ -361,14 +359,14 @@ export default function Home() {
         ref={(el) => {
           sectionRefs.current["reviews-section"] = el;
         }}
-        className={`mt-20 w-full max-w-6xl transition-all duration-1000 ${
+        className={`mt-40 w-full max-w-6xl transition-all duration-1000 ${
           visibleSections.has("reviews-section")
             ? "translate-y-0 opacity-100"
             : "translate-y-10 opacity-0"
         }`}
       >
         <h2 className="mb-8 text-center text-3xl font-bold text-gray-900 dark:text-white">
-          사용자 후기
+          고민하지 말고 Capsule로 홍보하세요!
         </h2>
         <div className="space-y-6">
           {/* 첫 번째 줄 - 왼쪽으로 이동 */}
@@ -453,13 +451,15 @@ export default function Home() {
         ref={(el) => {
           sectionRefs.current["how-to-section"] = el;
         }}
-        className={`mt-20 w-full max-w-6xl transition-all duration-1000 ${
+        className={`mt-40 w-full max-w-6xl transition-all duration-1000 ${
           visibleSections.has("how-to-section")
             ? "translate-y-0 opacity-100"
             : "translate-y-10 opacity-0"
         }`}
       >
-        <h2 className="mb-12 text-center text-3xl font-bold">사용 방법</h2>
+        <h2 className="mb-12 text-center text-3xl font-bold">
+          복잡한 광고, 이제는 쉽게 해결해드릴게요.
+        </h2>
         <div className="space-y-16">
           {howToUse.map((item, index) => (
             <div
@@ -470,8 +470,11 @@ export default function Home() {
             >
               <div className="flex-1">
                 <h3 className="mb-4 text-2xl font-bold">{item.title}</h3>
-                <p className="text-lg leading-relaxed text-gray-600">
+                <p className="text-grey-600 text-lg leading-relaxed dark:text-gray-400">
                   {item.description}
+                </p>
+                <p className="text-grey-600 text-lg leading-relaxed dark:text-gray-400">
+                  {item.description2}
                 </p>
               </div>
               <div className="flex-1">
@@ -493,13 +496,15 @@ export default function Home() {
         ref={(el) => {
           sectionRefs.current["features-section"] = el;
         }}
-        className={`mt-20 w-full max-w-6xl transition-all duration-1000 ${
+        className={`mt-40 w-full max-w-6xl transition-all duration-1000 ${
           visibleSections.has("features-section")
             ? "translate-y-0 opacity-100"
             : "translate-y-10 opacity-0"
         }`}
       >
-        <h2 className="mb-12 text-center text-3xl font-bold">서비스 특징</h2>
+        <h2 className="mb-12 text-center text-3xl font-bold">
+          누구나 쉽게 시작할 수 있는 Capsule의 서비스
+        </h2>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
             <Card
@@ -509,7 +514,7 @@ export default function Home() {
               <CardContent className="p-4">
                 <div className="mb-4 text-4xl">{feature.icon}</div>
                 <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
-                <p className="leading-relaxed text-gray-600">
+                <p className="leading-relaxed text-gray-600 dark:text-gray-400">
                   {feature.description}
                 </p>
               </CardContent>
@@ -530,7 +535,6 @@ export default function Home() {
             : "translate-y-10 opacity-0"
         }`}
       >
-        <h2 className="mb-8 text-center text-3xl font-bold">앱 다운로드</h2>
         <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
           <a
             href="https://play.google.com/store/apps/details?id=com.capsule.app"

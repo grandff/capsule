@@ -58,28 +58,31 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // 장기 실행 토큰 가져오기
   const longLivedToken = await getAccessToken(data.access_token);
 
-  // 데이터베이스에 토큰 저장
-  const [client] = makeServerClient(request);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  try {
-    await insertAccessToken(client, {
-      userId: user!.id,
-      accessToken: longLivedToken.access_token,
-      expiresIn: longLivedToken.expires_in,
-    });
-    console.log("Access token saved to database");
-  } catch (error) {
-    console.error("Error saving access token:", error);
-    return redirect("/dashboard/sns/connect?platform=threads&status=error");
-  }
-
   if (longLivedToken.access_token) {
-    return redirect("/dashboard/sns/connect?platform=threads&status=success");
+    const profileId = await getProfileId(longLivedToken.access_token);
+    console.log("profileId", profileId);
+    // 데이터베이스에 토큰 저장
+    const [client] = makeServerClient(request);
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    try {
+      await insertAccessToken(client, {
+        userId: user!.id,
+        accessToken: longLivedToken.access_token,
+        expiresIn: longLivedToken.expires_in,
+        targetType: "thread",
+        snsId: profileId.id,
+      });
+      console.log("Access token saved to database");
+      return redirect("/dashboard/sns/connect?platform=threads&status=success");
+    } catch (error) {
+      console.error("Error saving access token:", error);
+      return redirect("/dashboard/sns/connect?platform=threads&status=error");
+    }
   } else {
-    // TODO 에러 페이지로 리턴하기
+    console.error("Long-lived token not found");
     return redirect("/dashboard/sns/connect?platform=threads&status=error");
   }
 }
@@ -93,6 +96,23 @@ const getAccessToken = async (token: string) => {
     `access_token=${token}`;
 
   const response = await fetch(accessTokenUrl, {
+    method: "GET",
+  });
+
+  const data = await response.json();
+  return data;
+};
+
+// 프로필 정보 가져오기
+const getProfileId = async (token: string) => {
+  /*
+  curl -s -X GET \
+"https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url,threads_biography&access_token=$THREADS_ACCESS_TOKEN"
+  */
+
+  const profileIdUrl = `https://graph.threads.net/v1.0/me?fields=id&access_token=${token}`;
+
+  const response = await fetch(profileIdUrl, {
     method: "GET",
   });
 

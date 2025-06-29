@@ -12,10 +12,14 @@ export async function insertAccessToken(
     userId,
     accessToken,
     expiresIn,
+    targetType,
+    snsId,
   }: {
     userId: string;
     accessToken: string;
     expiresIn: number;
+    targetType: "thread" | "X";
+    snsId: string;
   },
 ) {
   // expires_in은 초 단위이므로 현재 시간에 더해서 만료 시간 계산
@@ -26,11 +30,13 @@ export async function insertAccessToken(
   const encryptedToken = encryptToken(accessToken);
 
   const { data, error } = await client
-    .from("profiles")
-    .update({
-      threads_access_token: encryptedToken, // 암호화된 토큰 저장
-      threads_expires_at: expiresAt.toISO(),
-      threads_connect: true, // 연결 상태도 true로 설정
+    .from("sns_profiles")
+    .upsert({
+      access_token: encryptedToken, // 암호화된 토큰 저장
+      expires_at: expiresAt.toISO(),
+      target_type: targetType,
+      user_id: snsId,
+      profile_id: userId,
     })
     .eq("profile_id", userId)
     .select();
@@ -46,16 +52,13 @@ export async function insertAccessToken(
 // 쓰레드 토큰 제거
 export async function deleteAccessToken(
   client: SupabaseClient<Database>,
-  { userId }: { userId: string },
+  { userId, targetType }: { userId: string; targetType: "thread" | "X" },
 ) {
   const { error } = await client
-    .from("profiles")
-    .update({
-      threads_access_token: null,
-      threads_expires_at: null,
-      threads_connect: false,
-    })
+    .from("sns_profiles")
+    .delete()
     .eq("profile_id", userId)
+    .eq("target_type", targetType)
     .select();
 
   if (error) {

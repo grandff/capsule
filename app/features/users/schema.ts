@@ -7,6 +7,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  pgEnum,
   pgPolicy,
   pgTable,
   text,
@@ -15,8 +16,13 @@ import {
 } from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
+import { TARGET_TYPES } from "~/constants";
 import { timestamps } from "~/core/db/helpers.server";
 
+export const targetType = pgEnum(
+  "target_type",
+  TARGET_TYPES.map((type) => type.value) as [string, ...string[]],
+);
 /**
  * Profiles Table
  *
@@ -39,9 +45,6 @@ export const profiles = pgTable(
     name: text().notNull(),
     marketing_consent: boolean().notNull().default(false),
     avatar_url: text(),
-    threads_connect: boolean().default(false),
-    threads_access_token: text(),
-    threads_expires_at: timestamp(),
     // Adds created_at and updated_at timestamp columns
     ...timestamps,
   },
@@ -63,6 +66,54 @@ export const profiles = pgTable(
     }),
     // RLS Policy: Users can only view their own profile
     pgPolicy("select-profile-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+  ],
+);
+
+export const snsProfiles = pgTable(
+  "sns_profiles",
+  {
+    profile_id: uuid()
+      .notNull()
+      .primaryKey()
+      .references(() => profiles.profile_id, {
+        onDelete: "cascade",
+      }),
+    target_type: targetType().notNull(),
+    access_token: text().notNull(),
+    expires_at: timestamp(),
+    user_id: text().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    // RLS Policy: Users can only insert their own settings
+    pgPolicy("insert-sns-profile-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own settings
+    pgPolicy("edit-sns-profile-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own settings
+    pgPolicy("delete-sns-profile-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only view their own settings
+    pgPolicy("select-sns-profile-policy", {
       for: "select",
       to: authenticatedRole,
       as: "permissive",

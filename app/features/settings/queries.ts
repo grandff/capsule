@@ -11,31 +11,44 @@ export async function getThreadsAccessToken(
   userId: string,
 ) {
   const { data, error } = await client
-    .from("profiles")
-    .select("threads_access_token, threads_expires_at, threads_connect")
+    .from("sns_profiles")
+    .select("access_token, expires_at, target_type, user_id")
     .eq("profile_id", userId)
+    .eq("target_type", "thread")
     .single();
 
   if (error) {
     console.error("Error fetching access token:", error);
-    throw error;
+    return {
+      accessToken: null,
+      expiresAt: null,
+      snsId: null,
+    };
   }
 
-  if (!data?.threads_access_token || !data?.threads_connect) {
-    return null;
+  if (!data?.access_token) {
+    return {
+      accessToken: null,
+      expiresAt: null,
+      snsId: null,
+    };
   }
 
   // 토큰 복호화하여 반환
   try {
-    const decryptedToken = decryptToken(data.threads_access_token);
+    const decryptedToken = decryptToken(data.access_token);
     return {
       accessToken: decryptedToken,
-      expiresAt: data.threads_expires_at,
-      isConnected: data.threads_connect,
+      expiresAt: data.expires_at,
+      snsId: data.user_id,
     };
   } catch (error) {
     console.error("Error decrypting token:", error);
-    return null;
+    return {
+      accessToken: null,
+      expiresAt: null,
+      snsId: null,
+    };
   }
 }
 
@@ -45,8 +58,8 @@ export async function getConnectionStatus(
   userId: string,
 ) {
   const { data, error } = await client
-    .from("profiles")
-    .select("threads_connect, threads_expires_at")
+    .from("sns_profiles")
+    .select("target_type, expires_at")
     .eq("profile_id", userId)
     .single();
 
@@ -54,19 +67,15 @@ export async function getConnectionStatus(
     return { isConnected: false, isExpired: false };
   }
 
-  if (!data?.threads_connect) {
-    return { isConnected: false, isExpired: false };
-  }
-
   // 만료 확인
   let isExpired = false;
-  if (data.threads_expires_at) {
-    const expiresAt = DateTime.fromISO(data.threads_expires_at);
+  if (data.expires_at) {
+    const expiresAt = DateTime.fromISO(data.expires_at);
     isExpired = DateTime.now() > expiresAt;
   }
 
   return {
-    threadsConnected: data.threads_connect && !isExpired,
+    threadsConnected: data.target_type === "thread" && !isExpired,
     threadsExpired: isExpired,
   };
 }

@@ -1,5 +1,13 @@
-import { CheckCircle2Icon, Loader2Icon, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  CheckCircle2Icon,
+  FileText,
+  Image,
+  Loader2Icon,
+  Upload,
+  Video,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
@@ -31,12 +39,31 @@ interface PromotionResult {
   weather: string;
 }
 
+interface UploadedFile {
+  id: string;
+  file: File;
+  type: "image" | "video";
+  preview: string;
+  size: number;
+  name: string;
+}
+
 export default function WriteResult() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [result, setResult] = useState<PromotionResult | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadError, setUploadError] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 파일 제한 설정
+  const MAX_FILES = 20;
+  const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8MB
+  const MAX_VIDEO_SIZE = 1024 * 1024 * 1024; // 1GB
+  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
+  const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime"];
 
   useEffect(() => {
     // URL 파라미터에서 결과 데이터 파싱
@@ -55,6 +82,87 @@ export default function WriteResult() {
       navigate("/dashboard/write/today");
     }
   }, [searchParams, navigate]);
+
+  // 파일 업로드 핸들러
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setUploadError("");
+
+    // 파일 개수 체크
+    if (uploadedFiles.length + files.length > MAX_FILES) {
+      setUploadError(`최대 ${MAX_FILES}개까지만 업로드 가능합니다.`);
+      return;
+    }
+
+    Array.from(files).forEach((file) => {
+      // 파일 타입 체크
+      const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+      const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+
+      if (!isImage && !isVideo) {
+        setUploadError(
+          "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG / 동영상: MP4, MOV)",
+        );
+        return;
+      }
+
+      // 파일 크기 체크
+      const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+      if (file.size > maxSize) {
+        const maxSizeMB = isImage ? "8MB" : "1GB";
+        setUploadError(
+          `${file.name} 파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`,
+        );
+        return;
+      }
+
+      // 파일 추가
+      const fileId = Date.now() + Math.random().toString(36).substr(2, 9);
+      const fileType = isImage ? "image" : "video";
+
+      // 미리보기 URL 생성
+      const preview = URL.createObjectURL(file);
+
+      const newFile: UploadedFile = {
+        id: fileId,
+        file,
+        type: fileType,
+        preview,
+        size: file.size,
+        name: file.name,
+      };
+
+      setUploadedFiles((prev) => [...prev, newFile]);
+    });
+
+    // 파일 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // 파일 삭제 핸들러
+  const handleFileRemove = (fileId: string) => {
+    setUploadedFiles((prev) => {
+      const fileToRemove = prev.find((f) => f.id === fileId);
+      if (fileToRemove) {
+        URL.revokeObjectURL(fileToRemove.preview);
+      }
+      return prev.filter((f) => f.id !== fileId);
+    });
+    setUploadError("");
+  };
+
+  // 파일 크기 포맷팅
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   // 다시 작성하기 핸들러
   const handleRewrite = () => {
@@ -80,6 +188,7 @@ export default function WriteResult() {
     //   length: result.length,
     //   timeframe: result.timeframe,
     //   weather: result.weather,
+    //   files: uploadedFiles,
     // });
 
     // 3초 대기 (실제로는 API 응답 시간)
@@ -234,6 +343,116 @@ export default function WriteResult() {
                 <p className="leading-relaxed whitespace-pre-wrap">
                   {result.content}
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 파일 업로드 섹션 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">미디어 첨부</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 업로드 에러 메시지 */}
+              {uploadError && (
+                <Alert className="border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+                  <AlertDescription>{uploadError}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* 파일 업로드 영역 */}
+              <div className="space-y-4">
+                {/* 업로드 버튼 */}
+                <div className="flex items-center gap-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.mp4,.mov"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    disabled={uploadedFiles.length >= MAX_FILES}
+                  >
+                    <Upload className="size-4" />
+                    파일 선택
+                  </Button>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {uploadedFiles.length}/{MAX_FILES}개 파일
+                  </span>
+                </div>
+
+                {/* 파일 형식 안내 */}
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <p>• 이미지: JPG, PNG (최대 8MB)</p>
+                  <p>• 동영상: MP4, MOV (최대 1GB)</p>
+                  <p>• 총 최대 20개까지 업로드 가능</p>
+                </div>
+
+                {/* 업로드된 파일 목록 */}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium">업로드된 파일</h4>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {uploadedFiles.map((file) => (
+                        <div
+                          key={file.id}
+                          className="relative rounded-lg border border-gray-200 p-3 dark:border-gray-700"
+                        >
+                          {/* 파일 타입 아이콘 */}
+                          <div className="mb-2 flex items-center gap-2">
+                            {file.type === "image" ? (
+                              <Image className="size-4 text-blue-600" />
+                            ) : (
+                              <Video className="size-4 text-purple-600" />
+                            )}
+                            <span className="truncate text-sm font-medium">
+                              {file.name}
+                            </span>
+                          </div>
+
+                          {/* 미리보기 */}
+                          {file.type === "image" ? (
+                            <div className="mb-2 aspect-video overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                              <img
+                                src={file.preview}
+                                alt={file.name}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="mb-2 aspect-video overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                              <video
+                                src={file.preview}
+                                className="h-full w-full object-cover"
+                                controls
+                              />
+                            </div>
+                          )}
+
+                          {/* 파일 정보 */}
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatFileSize(file.size)}
+                          </div>
+
+                          {/* 삭제 버튼 */}
+                          <Button
+                            onClick={() => handleFileRemove(file.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

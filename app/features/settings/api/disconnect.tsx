@@ -23,7 +23,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // 현재 사용자 가져오기
-    const [client, headers] = makeServerClient(request);
+    const [client] = makeServerClient(request);
     const {
       data: { user },
     } = await client.auth.getUser();
@@ -37,7 +37,10 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // 플랫폼별 연결 해제 처리
     if (platform === "threads") {
-      await deleteAccessToken(client, { userId: user.id });
+      await deleteAccessToken(client, {
+        userId: user.id,
+        targetType: "thread",
+      });
     } else {
       return new Response(JSON.stringify({ error: "Unsupported platform" }), {
         status: 400,
@@ -45,12 +48,8 @@ export async function action({ request }: ActionFunctionArgs) {
       });
     }
 
-    const responseHeaders = new Headers({ "Content-Type": "application/json" });
-    headers.forEach((value, key) => responseHeaders.set(key, value));
-
     return new Response(JSON.stringify({ success: true, platform }), {
       status: 200,
-      headers: responseHeaders,
     });
   } catch (error) {
     console.error("Error disconnecting platform:", error);
