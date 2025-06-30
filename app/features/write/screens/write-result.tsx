@@ -1,3 +1,5 @@
+import type { Route } from "./+types/write-result";
+
 import {
   CheckCircle2Icon,
   FileText,
@@ -8,7 +10,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
+import { z } from "zod";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
 import { Badge } from "~/core/components/ui/badge";
@@ -48,15 +51,57 @@ interface UploadedFile {
   name: string;
 }
 
+const promotionResultSchema = z.object({
+  content: z.string(),
+  originalText: z.string(),
+  moods: z.array(z.string()),
+  industries: z.array(z.string()),
+  tones: z.array(z.string()),
+  keywords: z.array(z.string()),
+  intents: z.array(z.string()).optional(),
+  length: z.string().optional(),
+  timeframe: z.string().optional(),
+  weather: z.string().optional(),
+});
+
+// FIXME 오류 나는 경우에는 오류 페이지로 이동시키기
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const resultParam = url.searchParams.get("result");
+  if (!resultParam) {
+    return new Response(JSON.stringify({ error: "결과 데이터가 없습니다." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  try {
+    const parsed = JSON.parse(resultParam);
+    const result = promotionResultSchema.parse(parsed);
+    return new Response(JSON.stringify({ result }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: "결과 데이터 파싱 또는 검증 실패" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+}
+
+interface LoaderData {
+  result?: z.infer<typeof promotionResultSchema>;
+  error?: string;
+}
+
 export default function WriteResult() {
-  const [searchParams] = useSearchParams();
+  const loaderData = useLoaderData() as LoaderData;
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [result, setResult] = useState<PromotionResult | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploadError, setUploadError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // 파일 제한 설정
   const MAX_FILES = 20;
@@ -65,23 +110,26 @@ export default function WriteResult() {
   const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
   const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime"];
 
-  useEffect(() => {
-    // URL 파라미터에서 결과 데이터 파싱
-    const resultParam = searchParams.get("result");
-    if (resultParam) {
-      try {
-        const parsedResult = JSON.parse(resultParam);
-        setResult(parsedResult);
-      } catch (error) {
-        console.error("Failed to parse result data:", error);
-        // 파싱 실패 시 홈으로 리다이렉트
-        navigate("/dashboard/write/today");
-      }
-    } else {
-      // 결과 데이터가 없으면 홈으로 리다이렉트
-      navigate("/dashboard/write/today");
-    }
-  }, [searchParams, navigate]);
+  if (loaderData?.error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Alert className="border-red-200 bg-red-50 text-red-800">
+          <AlertDescription>{loaderData.error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const result = loaderData.result;
+  if (!result) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Alert className="border-red-200 bg-red-50 text-red-800">
+          <AlertDescription>결과 데이터가 없습니다.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   // 파일 업로드 핸들러
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,41 +220,34 @@ export default function WriteResult() {
   // 업로드하기 핸들러
   const handleUpload = async (platform: string) => {
     if (!result) return;
-
     setIsUploading(true);
 
-    // TODO: 실제 API 업로드 로직 구현 필요
-    // const uploadResult = await uploadToPlatform({
-    //   platform,
-    //   content: result.content,
-    //   originalText: result.originalText,
-    //   moods: result.moods,
-    //   industries: result.industries,
-    //   tones: result.tones,
-    //   keywords: result.keywords,
-    //   intents: result.intents,
-    //   length: result.length,
-    //   timeframe: result.timeframe,
-    //   weather: result.weather,
-    //   files: uploadedFiles,
-    // });
+    if (platform === "threads") {
+      const formData = new FormData();
+      // TODO 카테고리, 키워드 까지 전송
+      formData.append("shortText", result.originalText);
+      formData.append("text", result.content);
+      if (uploadedFiles.length > 0 && uploadedFiles[0].type === "image") {
+        formData.append("imageUrl", uploadedFiles[0].preview);
+      }
+      if (uploadedFiles.length > 0 && uploadedFiles[0].type === "video") {
+        formData.append("videoUrl", uploadedFiles[0].preview);
+      }
+      // 비동기 API 호출 (백그라운드)
+      fetch("/api/write/send-to-thread", {
+        method: "POST",
+        body: formData,
+      });
+      // 바로 글 목록으로 이동
+      navigate(`/dashboard/history?upload=success&platform=${platform}`);
+      return;
+    }
 
-    // 3초 대기 (실제로는 API 응답 시간)
     setTimeout(() => {
       setIsUploading(false);
-
-      // history-list로 이동하면서 성공 파라미터 전달
       navigate(`/dashboard/history?upload=success&platform=${platform}`);
     }, 3000);
   };
-
-  if (!result) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2Icon className="size-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -511,6 +552,38 @@ export default function WriteResult() {
           </div>
         </div>
       </div>
+
+      {/* Threads 업로드용 form (숨김) */}
+      <form
+        ref={formRef}
+        method="post"
+        action="/api/write/send-to-thread"
+        encType="multipart/form-data"
+        className="hidden"
+      >
+        <input type="hidden" name="text" value={result?.content || ""} />
+        {/* 이미지/동영상 파일이 있다면 첫 번째 파일의 url을 전달 (실제 업로드 구현에 따라 수정) */}
+        {uploadedFiles.length > 0 && uploadedFiles[0].type === "image" && (
+          <input
+            type="hidden"
+            name="imageUrl"
+            value={uploadedFiles[0].preview}
+          />
+        )}
+        {uploadedFiles.length > 0 && uploadedFiles[0].type === "video" && (
+          <input
+            type="hidden"
+            name="videoUrl"
+            value={uploadedFiles[0].preview}
+          />
+        )}
+      </form>
     </div>
   );
+}
+
+function sendToThread(
+  result: PromotionResult,
+): { data: any; error: any } | PromiseLike<{ data: any; error: any }> {
+  throw new Error("Function not implemented.");
 }

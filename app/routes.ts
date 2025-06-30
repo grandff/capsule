@@ -46,6 +46,9 @@ export default [
         "features/users/api/disconnect-provider.tsx",
       ),
     ]),
+    ...prefix("/write", [
+      route("/send-to-thread", "features/write/api/send-to-thread.tsx"),
+    ]),
     ...prefix("/cron", [route("/mailer", "features/cron/api/mailer.tsx")]),
     ...prefix("/blog", [route("/og", "features/blog/api/og.tsx")]),
   ]),

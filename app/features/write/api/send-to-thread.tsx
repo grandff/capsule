@@ -3,11 +3,14 @@ import { type ActionFunctionArgs, data } from "react-router";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getThreadsAccessToken } from "~/features/settings/queries";
 
+import { saveThread } from "../mutations";
+
 const THREAD_END_POINT_URL = "https://graph.threads.net/v1.0";
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const text = formData.get("text") as string;
+  const shortText = formData.get("shortText") as string;
   const imageUrl = formData.get("imageUrl") as string;
   const videoUrl = formData.get("videoUrl") as string;
 
@@ -33,7 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // 쓰레드 컨테이너 생성
   const { id: containerId } = await threads(
-    user.id,
+    snsId,
     text,
     accessToken,
     imageUrl,
@@ -42,12 +45,22 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // 쓰레드 게시
   const { id: threadId } = await threadsPublish(
-    user.id,
+    snsId,
     containerId,
     accessToken,
   );
 
-  // TODO 결과값을 write 테이블에도 저장
+  // 결과값을 write 테이블에도 저장
+  await saveThread(client, {
+    shortText,
+    thread: text,
+    targetType: "thread",
+    sendFlag: true,
+    resultId: threadId,
+    profileId: user.id,
+  });
+
+  console.log("threadId", threadId);
 
   return data({ threadId }, { status: 200 });
 }
@@ -69,12 +82,15 @@ const threads = async (
   formData.append("text", text);
   formData.append("access_token", accessToken);
 
+  console.log("userId", userId);
+  console.log("accessToken", accessToken);
   const response = await fetch(`${THREAD_END_POINT_URL}/${userId}/threads`, {
     method: "POST",
     body: formData,
   });
 
   const data = await response.json();
+  console.log("data", data);
   return data; // return thread media container Id
 };
 
@@ -96,5 +112,6 @@ const threadsPublish = async (
   );
 
   const data = await response.json();
+  console.log("data", data);
   return data; // return thread media Id
 };

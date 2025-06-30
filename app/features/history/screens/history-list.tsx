@@ -1,3 +1,5 @@
+import type { Route } from "./+types/history-list";
+
 import {
   Calendar,
   CheckCircle,
@@ -12,7 +14,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useLoaderData, useSearchParams } from "react-router";
+import { ToastContainer, toast } from "react-toastify";
+import { z } from "zod";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
 import { Badge } from "~/core/components/ui/badge";
@@ -25,35 +29,39 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 
+const searchParamsSchema = z.object({
+  upload: z.string().optional(),
+  platform: z.string().optional(),
+});
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const params = searchParamsSchema.safeParse(
+    Object.fromEntries(url.searchParams.entries()),
+  );
+  return params.success ? params.data : {};
+}
+
 export default function HistoryList() {
-  const [searchParams] = useSearchParams();
+  const loaderData = useLoaderData() as z.infer<typeof searchParamsSchema>;
   const [posts, setPosts] = useState<any[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [showUploadAlert, setShowUploadAlert] = useState(false);
-  const [uploadPlatform, setUploadPlatform] = useState<string>("");
   const observer = useRef<IntersectionObserver | null>(null);
 
-  // URL 파라미터에서 업로드 성공 여부 확인
+  // 업로드 성공 toast 알림
   useEffect(() => {
-    const uploadStatus = searchParams.get("upload");
-    const platform = searchParams.get("platform");
-
-    if (uploadStatus === "success" && platform) {
-      setShowUploadAlert(true);
-      setUploadPlatform(platform);
-
-      // 5초 후 알림 자동 숨김
-      const timer = setTimeout(() => {
-        setShowUploadAlert(false);
-      }, 5000);
-
-      return () => clearTimeout(timer);
+    if (loaderData.upload === "success" && loaderData.platform) {
+      toast.success(
+        `홍보글이 ${getPlatformDisplayName(loaderData.platform)}에 성공적으로 업로드되었습니다!`,
+        { autoClose: 5000 },
+      );
     }
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaderData.upload, loaderData.platform]);
 
   // 샘플 데이터 생성
   const generateSamplePosts = (pageNum: number, count: number) => {
@@ -183,17 +191,6 @@ export default function HistoryList() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* 업로드 성공 알림 */}
-      {showUploadAlert && (
-        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
-          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertDescription className="text-green-800 dark:text-green-200">
-            홍보글이 {getPlatformDisplayName(uploadPlatform)}에 성공적으로
-            업로드되었습니다!
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* 검색 영역 */}
       <div className="relative">
         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400 dark:text-gray-500" />
