@@ -43,18 +43,23 @@ const data = {
       title: "트렌드",
       url: "#",
       icon: TrendingUp,
+      disabled: true,
+      comingSoon: true,
       items: [
         {
           title: "트렌드 분석",
-          url: "/dashboard/trend",
+          url: "#",
+          disabled: true,
         },
         {
           title: "나와 비슷한 사람들",
-          url: "/dashboard/trend/user",
+          url: "#",
+          disabled: true,
         },
         {
           title: "인기 토픽",
-          url: "/dashboard/trend/topic",
+          url: "#",
+          disabled: true,
         },
       ],
     },
@@ -62,14 +67,18 @@ const data = {
       title: "챌린지",
       url: "#",
       icon: MedalIcon,
+      disabled: true,
+      comingSoon: true,
       items: [
         {
           title: "진행 중인 챌린지",
-          url: "/dashboard/challenge",
+          url: "#",
+          disabled: true,
         },
         {
           title: "내 챌린지",
-          url: "/dashboard/challenge/my",
+          url: "#",
+          disabled: true,
         },
       ],
     },
@@ -84,7 +93,9 @@ const data = {
         },
         {
           title: "요금제 관리",
-          url: "/dashboard/premium",
+          url: "#",
+          disabled: true,
+          comingSoon: true,
         },
         {
           title: "설정",

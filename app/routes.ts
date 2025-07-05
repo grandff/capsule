@@ -48,6 +48,11 @@ export default [
     ]),
     ...prefix("/write", [
       route("/send-to-thread", "features/write/api/send-to-thread.tsx"),
+      route("/prompts", "features/write/api/prompts.tsx"),
+      route("/upload-media", "features/write/api/upload-media.tsx"),
+    ]),
+    ...prefix("/chatgpt", [
+      route("/create-gpt-idea", "features/chatgpt/api/create-gpt-idea.tsx"),
     ]),
     ...prefix("/cron", [route("/mailer", "features/cron/api/mailer.tsx")]),
     ...prefix("/blog", [route("/og", "features/blog/api/og.tsx")]),

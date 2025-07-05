@@ -28,7 +28,11 @@ export default function SidebarMain({
     items?: {
       title: string;
       url: string;
+      disabled?: boolean;
+      comingSoon?: boolean;
     }[];
+    comingSoon?: boolean;
+    disabled?: boolean;
   }[];
 }) {
   return (
@@ -47,6 +51,11 @@ export default function SidebarMain({
                 <SidebarMenuButton tooltip={item.title}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
+                  {item.comingSoon && (
+                    <span className="ml-2 rounded bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                      준비중
+                    </span>
+                  )}
                   <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuButton>
               </CollapsibleTrigger>
@@ -55,9 +64,25 @@ export default function SidebarMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link to={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </Link>
+                        {subItem.disabled ? (
+                          <span className="cursor-not-allowed text-gray-400">
+                            {subItem.title}
+                            {subItem.comingSoon && (
+                              <span className="ml-2 rounded bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                                준비중
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <Link to={subItem.url} className="hover:underline">
+                            <span>{subItem.title}</span>
+                            {subItem.comingSoon && (
+                              <span className="ml-2 rounded bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                                준비중
+                              </span>
+                            )}
+                          </Link>
+                        )}
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

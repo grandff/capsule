@@ -2,6 +2,7 @@ import type { Route } from "./+types/write-result";
 
 import {
   CheckCircle2Icon,
+  Copy,
   FileText,
   Image,
   Loader2Icon,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
+import { ToastContainer, toast } from "react-toastify";
 import { z } from "zod";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
@@ -28,12 +30,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/core/components/ui/dropdown-menu";
+import { Textarea } from "~/core/components/ui/textarea";
 
 interface PromotionResult {
   content: string;
   originalText: string;
   moods: string[];
-  industries: string[];
   tones: string[];
   keywords: string[];
   intents: string[];
@@ -49,13 +51,14 @@ interface UploadedFile {
   preview: string;
   size: number;
   name: string;
+  uploadedUrl?: string; // Supabase storage URL
+  isUploaded?: boolean; // 업로드 완료 여부
 }
 
 const promotionResultSchema = z.object({
   content: z.string(),
   originalText: z.string(),
   moods: z.array(z.string()),
-  industries: z.array(z.string()),
   tones: z.array(z.string()),
   keywords: z.array(z.string()),
   intents: z.array(z.string()).optional(),
@@ -100,6 +103,10 @@ export default function WriteResult() {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploadError, setUploadError] = useState<string>("");
+  const [editedContent, setEditedContent] = useState<string>("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -131,8 +138,33 @@ export default function WriteResult() {
     );
   }
 
+  // 파일을 API를 통해 Supabase Storage에 업로드
+  const uploadFileToStorage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/write/upload-media", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "파일 업로드 실패");
+    }
+
+    if (!result.success) {
+      throw new Error(result.error || "파일 업로드 실패");
+    }
+
+    return result.url;
+  };
+
   // 파일 업로드 핸들러
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = event.target.files;
     if (!files) return;
 
@@ -143,6 +175,9 @@ export default function WriteResult() {
       setUploadError(`최대 ${MAX_FILES}개까지만 업로드 가능합니다.`);
       return;
     }
+
+    // 임시로 파일들을 추가 (업로드 전)
+    const newFiles: UploadedFile[] = [];
 
     Array.from(files).forEach((file) => {
       // 파일 타입 체크
@@ -180,10 +215,36 @@ export default function WriteResult() {
         preview,
         size: file.size,
         name: file.name,
+        isUploaded: false,
       };
 
-      setUploadedFiles((prev) => [...prev, newFile]);
+      newFiles.push(newFile);
     });
+
+    // 파일들을 상태에 추가
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+
+    // 각 파일을 API를 통해 업로드
+    for (const file of newFiles) {
+      try {
+        const uploadedUrl = await uploadFileToStorage(file.file);
+
+        // 업로드 완료된 파일 업데이트
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.id === file.id ? { ...f, uploadedUrl, isUploaded: true } : f,
+          ),
+        );
+
+        toast.success(`${file.name} 업로드 완료!`);
+      } catch (error) {
+        console.error(`파일 업로드 실패: ${file.name}`, error);
+        toast.error(`${file.name} 업로드 실패`);
+
+        // 실패한 파일 제거
+        setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id));
+      }
+    }
 
     // 파일 입력 초기화
     if (fileInputRef.current) {
@@ -191,16 +252,58 @@ export default function WriteResult() {
     }
   };
 
-  // 파일 삭제 핸들러
-  const handleFileRemove = (fileId: string) => {
-    setUploadedFiles((prev) => {
-      const fileToRemove = prev.find((f) => f.id === fileId);
-      if (fileToRemove) {
-        URL.revokeObjectURL(fileToRemove.preview);
+  // 파일 삭제 확인 핸들러
+  const handleFileRemoveConfirm = (fileId: string) => {
+    setFileToDelete(fileId);
+    setShowDeleteAlert(true);
+  };
+
+  // 파일 삭제 실행 핸들러
+  const handleFileRemove = async () => {
+    if (!fileToDelete) return;
+
+    const fileToRemove = uploadedFiles.find((f) => f.id === fileToDelete);
+    if (!fileToRemove) return;
+
+    try {
+      // API를 통해 Supabase Storage에서 파일 삭제
+      if (fileToRemove.uploadedUrl) {
+        // URL에서 파일 경로 추출
+        const urlParts = fileToRemove.uploadedUrl.split("/");
+        const filePath = urlParts.slice(-4).join("/"); // userId/yyyy/mm/dd/filename
+
+        const formData = new FormData();
+        formData.append("filePath", filePath);
+
+        const response = await fetch("/api/write/delete-media", {
+          method: "DELETE",
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error("Storage에서 파일 삭제 실패:", result.error);
+        }
       }
-      return prev.filter((f) => f.id !== fileId);
-    });
-    setUploadError("");
+
+      // 로컬 상태에서 파일 제거
+      setUploadedFiles((prev) => {
+        const fileToRemove = prev.find((f) => f.id === fileToDelete);
+        if (fileToRemove) {
+          URL.revokeObjectURL(fileToRemove.preview);
+        }
+        return prev.filter((f) => f.id !== fileToDelete);
+      });
+
+      toast.success("파일이 삭제되었습니다.");
+    } catch (error) {
+      console.error("파일 삭제 중 오류:", error);
+      toast.error("파일 삭제 중 오류가 발생했습니다.");
+    } finally {
+      setShowDeleteAlert(false);
+      setFileToDelete(null);
+    }
   };
 
   // 파일 크기 포맷팅
@@ -217,22 +320,69 @@ export default function WriteResult() {
     navigate("/dashboard/write/today");
   };
 
+  // 편집 모드 토글 핸들러
+  const handleToggleEdit = () => {
+    if (!isEditing) {
+      setEditedContent(result.content);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  // 편집 완료 핸들러
+  const handleSaveEdit = () => {
+    setIsEditing(false);
+  };
+
+  // 편집 취소 핸들러
+  const handleCancelEdit = () => {
+    setEditedContent(result.content);
+    setIsEditing(false);
+  };
+
+  // 복사 핸들러
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(displayContent);
+      toast.success("홍보글이 클립보드에 복사되었습니다!", {
+        autoClose: 3000,
+      });
+    } catch (error) {
+      toast.error("복사에 실패했습니다.", {
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // 현재 표시할 콘텐츠 (편집 중이면 editedContent, 아니면 원본)
+  const displayContent = isEditing ? editedContent : result.content;
+
   // 업로드하기 핸들러
   const handleUpload = async (platform: string) => {
     if (!result) return;
     setIsUploading(true);
 
+    // 파일 개수에 따른 분기 처리
+    const hasMultipleFiles = uploadedFiles.length > 1;
+    console.log(
+      `파일 개수: ${uploadedFiles.length}, 다중 파일: ${hasMultipleFiles}`,
+    );
+
     if (platform === "threads") {
       const formData = new FormData();
       // TODO 카테고리, 키워드 까지 전송
       formData.append("shortText", result.originalText);
-      formData.append("text", result.content);
-      if (uploadedFiles.length > 0 && uploadedFiles[0].type === "image") {
-        formData.append("imageUrl", uploadedFiles[0].preview);
+      formData.append("text", displayContent); // 편집된 내용 사용
+
+      // 업로드된 파일이 있으면 첫 번째 파일의 URL 전송
+      const uploadedFile = uploadedFiles.find((f) => f.isUploaded);
+      if (uploadedFile && uploadedFile.uploadedUrl) {
+        if (uploadedFile.type === "image") {
+          formData.append("imageUrl", uploadedFile.uploadedUrl);
+        } else if (uploadedFile.type === "video") {
+          formData.append("videoUrl", uploadedFile.uploadedUrl);
+        }
       }
-      if (uploadedFiles.length > 0 && uploadedFiles[0].type === "video") {
-        formData.append("videoUrl", uploadedFiles[0].preview);
-      }
+
       // 비동기 API 호출 (백그라운드)
       fetch("/api/write/send-to-thread", {
         method: "POST",
@@ -251,6 +401,9 @@ export default function WriteResult() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Toast 알림 */}
+      <ToastContainer />
+
       {/* 성공 알림 */}
       {showSuccessAlert && (
         <div className="fixed top-4 right-4 z-50">
@@ -258,6 +411,33 @@ export default function WriteResult() {
             <CheckCircle2Icon className="size-4 text-green-600" />
             <AlertDescription>
               홍보글이 성공적으로 업로드되었습니다!
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* 삭제 확인 Alert */}
+      {showDeleteAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Alert className="w-96 border-red-200 bg-red-50 text-red-800">
+            <AlertDescription className="space-y-4">
+              <p>정말로 이 파일을 삭제하시겠습니까?</p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleFileRemove}
+                  variant="destructive"
+                  size="sm"
+                >
+                  삭제
+                </Button>
+                <Button
+                  onClick={() => setShowDeleteAlert(false)}
+                  variant="outline"
+                  size="sm"
+                >
+                  취소
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         </div>
@@ -300,16 +480,7 @@ export default function WriteResult() {
                   ))}
                 </div>
               </div>
-              <div>
-                <h4 className="mb-2 font-medium">산업군</h4>
-                <div className="flex flex-wrap gap-2">
-                  {result.industries.map((industry) => (
-                    <Badge key={industry} variant="secondary">
-                      {industry}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+
               <div>
                 <h4 className="mb-2 font-medium">톤</h4>
                 <div className="flex flex-wrap gap-2">
@@ -377,14 +548,71 @@ export default function WriteResult() {
           {/* 생성된 홍보글 */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">생성된 홍보글</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted rounded-lg p-4">
-                <p className="leading-relaxed whitespace-pre-wrap">
-                  {result.content}
-                </p>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">생성된 홍보글</CardTitle>
+                <div className="flex items-center gap-2">
+                  {!isEditing && (
+                    <>
+                      <Button
+                        onClick={handleToggleEdit}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <FileText className="size-4" />
+                        수정하기
+                      </Button>
+                      <Button
+                        onClick={handleCopy}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Copy className="size-4" />
+                        복사하기
+                      </Button>
+                    </>
+                  )}
+                  {isEditing && (
+                    <>
+                      <Button
+                        onClick={handleSaveEdit}
+                        variant="default"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <CheckCircle2Icon className="size-4" />
+                        저장
+                      </Button>
+                      <Button
+                        onClick={handleCancelEdit}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <X className="size-4" />
+                        취소
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isEditing ? (
+                <Textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="min-h-[200px] resize-none text-base leading-relaxed"
+                  placeholder="홍보글을 수정해보세요..."
+                />
+              ) : (
+                <div className="bg-muted rounded-lg p-4">
+                  <p className="leading-relaxed whitespace-pre-wrap">
+                    {displayContent}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -454,6 +682,9 @@ export default function WriteResult() {
                             <span className="truncate text-sm font-medium">
                               {file.name}
                             </span>
+                            {file.isUploaded && (
+                              <CheckCircle2Icon className="size-4 text-green-600" />
+                            )}
                           </div>
 
                           {/* 미리보기 */}
@@ -482,7 +713,7 @@ export default function WriteResult() {
 
                           {/* 삭제 버튼 */}
                           <Button
-                            onClick={() => handleFileRemove(file.id)}
+                            onClick={() => handleFileRemoveConfirm(file.id)}
                             variant="ghost"
                             size="sm"
                             className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
@@ -541,10 +772,13 @@ export default function WriteResult() {
                 <DropdownMenuItem
                   onClick={() => handleUpload("x")}
                   disabled={isUploading}
-                  className="cursor-pointer"
+                  className="cursor-pointer opacity-50"
                 >
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded bg-black" />X (Twitter)
+                    <Badge variant="outline" className="ml-auto text-xs">
+                      Coming Soon
+                    </Badge>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -1,47 +1,20 @@
-import {
-  CheckCircle,
-  CheckCircleIcon,
-  ChevronRight,
-  ExternalLink,
-  Link,
-  Unlink,
-  XCircle,
-  XCircleIcon,
-} from "lucide-react";
+import type { SnsPlatform } from "../types/settings-type";
+
 import { useEffect, useState } from "react";
 import {
   type LoaderFunctionArgs,
-  redirect,
   useFetcher,
   useLoaderData,
 } from "react-router";
+import { ToastContainer, toast } from "react-toastify";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "~/core/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/core/components/ui/alert-dialog";
-import { Badge } from "~/core/components/ui/badge";
-import { Button } from "~/core/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "~/core/components/ui/card";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getConnectionStatus } from "~/features/settings/queries";
+
+import ConnectionGuide from "../components/connection-guide";
+import SnsPlatformSection from "../components/sns-platform-section";
+import SnsStatus from "../components/sns-status";
+import { isConnected } from "../utils/sns-connect-util";
 
 // SVG 로고 컴포넌트들
 const ThreadsLogo = () => (
@@ -124,14 +97,10 @@ export default function SnsConnect() {
 
   // status가 있으면 Alert 표시
   useEffect(() => {
-    if (status) {
-      setShowAlert(true);
-
-      // 3초 후 Alert 자동 숨김
-      const timer = setTimeout(() => {
-        setShowAlert(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+    if (status === "success") {
+      toast.success(`${platform} 계정이 성공적으로 연결되었습니다!`);
+    } else if (status === "error" && platform) {
+      toast.error(`${platform} 계정 연결에 실패했습니다. 다시 시도해주세요.`);
     }
   }, [status, platform]);
 
@@ -169,7 +138,7 @@ export default function SnsConnect() {
   };
 
   // SNS 플랫폼 데이터
-  const snsPlatforms = [
+  const snsPlatforms: SnsPlatform[] = [
     {
       id: "threads",
       name: "Threads",
@@ -191,16 +160,12 @@ export default function SnsConnect() {
     },
   ];
 
-  const isConnected = (platformId: string) => {
-    return connectedSNSArray.includes(platformId);
-  };
-
-  const handleConnect = (platform: any) => {
+  const handleConnect = (platform: SnsPlatform) => {
     if (platform.status === "coming_soon") {
       return;
     }
 
-    if (isConnected(platform.id)) {
+    if (isConnected(connectedSNSArray, platform.id)) {
       // 이미 연결되어 있다면 연결 해제 확인 다이얼로그 열기
       handleDisconnectConfirm(platform.id);
     } else {
@@ -210,95 +175,11 @@ export default function SnsConnect() {
     }
   };
 
-  const getStatusBadge = (platform: any) => {
-    if (platform.status === "coming_soon") {
-      return <Badge variant="secondary">Coming Soon</Badge>;
-    }
-
-    if (isConnected(platform.id)) {
-      return (
-        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-          연결됨
-        </Badge>
-      );
-    } else {
-      return <Badge variant="outline">연결 안됨</Badge>;
-    }
-  };
-
-  const getActionButton = (platform: any) => {
-    if (platform.status === "coming_soon") {
-      return (
-        <Button variant="outline" disabled size="sm">
-          준비중
-        </Button>
-      );
-    }
-
-    if (isConnected(platform.id)) {
-      return (
-        <AlertDialog
-          open={disconnectPlatform === platform.id}
-          onOpenChange={(open) => !open && handleDisconnectCancel()}
-        >
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 hover:text-red-700"
-            >
-              <Unlink className="mr-1 h-4 w-4" />
-              연결 해제
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>연결 해제 확인</AlertDialogTitle>
-              <AlertDialogDescription>
-                {platform.name} 계정과의 연결을 해제하시겠습니까? 연결 해제
-                후에는 해당 플랫폼으로 자동 업로드가 중단됩니다.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleDisconnectCancel}>
-                취소
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDisconnect}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                연결 해제
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      );
-    } else {
-      const isConnecting = connectingPlatform === platform.id;
-      return (
-        <Button
-          size="sm"
-          onClick={() => handleConnect(platform)}
-          disabled={isConnecting}
-        >
-          {isConnecting ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              연결 중...
-            </>
-          ) : (
-            <>
-              <Link className="mr-1 h-4 w-4" />
-              연결하기
-            </>
-          )}
-        </Button>
-      );
-    }
-  };
-
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
+      {/* Alert 메시지 */}
+      {/* TODO 에러 메시지를 받았을 때 처리가 필요함 */}
+      <ToastContainer />
       {/* 상단 헤더 */}
       <div>
         <h1 className="text-3xl font-bold">SNS 연결</h1>
@@ -307,130 +188,30 @@ export default function SnsConnect() {
         </p>
       </div>
 
-      {/* Alert 메시지 */}
-      {/* TODO 에러 메시지를 받았을 때 처리가 필요함 */}
-      {showAlert && status && (
-        <Alert
-          className={
-            status === "success"
-              ? "border-green-200 bg-green-50"
-              : "border-red-200 bg-red-50"
-          }
-        >
-          {status === "success" ? (
-            <CheckCircleIcon className="h-4 w-4" color="green" />
-          ) : (
-            <XCircleIcon className="h-4 w-4" color="red" />
-          )}
-          <AlertDescription
-            className={status === "success" ? "text-green-800" : "text-red-800"}
-          >
-            {status === "success"
-              ? `${platform} 계정이 성공적으로 연결되었습니다!`
-              : `${platform} 계정 연결에 실패했습니다. 다시 시도해주세요.`}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* 연결된 SNS 요약 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Link className="h-5 w-5" />
-            연결 현황
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span className="font-medium">
-                {connectedSNSArray.length}개 플랫폼 연결됨
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-gray-400" />
-              <span className="text-muted-foreground">
-                {snsPlatforms.length - connectedSNSArray.length}개 미연결
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <SnsStatus
+        connectedSNSArray={connectedSNSArray}
+        snsPlatforms={snsPlatforms}
+      />
 
       {/* SNS 플랫폼 목록 */}
       <div className="space-y-4">
         {snsPlatforms.map((platform) => (
-          <Card key={platform.id} className="transition-shadow hover:shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                {/* 왼쪽: 로고와 정보 */}
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 text-gray-700">
-                    {platform.logo}
-                  </div>
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-3">
-                      <h3 className="text-lg font-semibold">{platform.name}</h3>
-                      {getStatusBadge(platform)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 오른쪽: 액션 버튼과 화살표 */}
-                <div className="flex items-center gap-3">
-                  {getActionButton(platform)}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleConnect(platform)}
-                    disabled={platform.status === "coming_soon"}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <SnsPlatformSection
+            key={platform.id}
+            platform={platform}
+            connectedSNSArray={connectedSNSArray}
+            disconnectPlatform={disconnectPlatform ?? ""}
+            connectingPlatform={connectingPlatform ?? ""}
+            handleDisconnectCancel={handleDisconnectCancel}
+            handleDisconnect={handleDisconnect}
+            handleConnect={handleConnect}
+          />
         ))}
       </div>
 
       {/* 연결 가이드 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>연결 가이드</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <h4 className="font-semibold">연결 방법</h4>
-            <ol className="text-muted-foreground list-inside list-decimal space-y-2 text-sm">
-              <li>연결하고 싶은 SNS 플랫폼의 "연결하기" 버튼을 클릭하세요.</li>
-              <li>해당 플랫폼의 로그인 페이지로 이동합니다.</li>
-              <li>계정 정보를 입력하고 권한을 승인하세요.</li>
-              <li>
-                연결이 완료되면 내가 작성한 글을 자동으로 업로드할 수 있습니다.
-              </li>
-            </ol>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="font-semibold">연결 해제</h4>
-            <p className="text-muted-foreground text-sm">
-              "연결 해제" 버튼을 클릭하면 언제든지 연결을 해제할 수 있습니다.
-              연결 해제 후에는 해당 플랫폼으로 자동 업로드가 중단됩니다.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="font-semibold">권한 안내</h4>
-            <p className="text-muted-foreground text-sm">
-              연결 시 필요한 최소한의 권한만 요청합니다. 계정 정보나 개인
-              메시지에는 접근하지 않으며, 오직 홍보글 업로드와 기본 통계
-              확인만을 위한 권한을 요청합니다.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <ConnectionGuide />
     </div>
   );
 }

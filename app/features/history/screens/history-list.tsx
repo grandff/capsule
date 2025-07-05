@@ -18,7 +18,6 @@ import { Link, useLoaderData, useSearchParams } from "react-router";
 import { ToastContainer, toast } from "react-toastify";
 import { z } from "zod";
 
-import { Alert, AlertDescription } from "~/core/components/ui/alert";
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 import {
@@ -192,6 +191,7 @@ export default function HistoryList() {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       {/* 검색 영역 */}
+      <ToastContainer />
       <div className="relative">
         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400 dark:text-gray-500" />
         <Input
