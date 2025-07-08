@@ -225,10 +225,10 @@ export default function Home() {
       {/* Main headline with responsive typography */}
 
       <span>
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
+        <h1 className="justify-center text-4xl font-extrabold tracking-tight lg:text-6xl">
           브랜드 홍보, 어렵고 귀찮았죠?
         </h1>
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
+        <h1 className="flex justify-center text-4xl font-extrabold tracking-tight lg:text-6xl">
           <SparklesText className="inline-block">Capsule</SparklesText>이 대신
           써줄게요.
         </h1>
