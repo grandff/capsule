@@ -41,6 +41,7 @@ export default [
       route("/email", "features/users/api/change-email.tsx"),
       route("/profile", "features/users/api/edit-profile.tsx"),
       route("/providers", "features/users/api/connect-provider.tsx"),
+      route("/insights", "features/users/api/get-user-insights.tsx"),
       route(
         "/providers/:provider",
         "features/users/api/disconnect-provider.tsx",
@@ -50,6 +51,24 @@ export default [
       route("/send-to-thread", "features/write/api/send-to-thread.tsx"),
       route("/prompts", "features/write/api/prompts.tsx"),
       route("/upload-media", "features/write/api/upload-media.tsx"),
+      route("/check-token", "features/write/api/check-token.tsx"),
+    ]),
+    ...prefix("/history", [
+      route("/thread/:id", "features/history/api/thread-detail.tsx"),
+      route(
+        "/retrieve-user-posts/:id",
+        "features/history/api/retrieve-user-posts.tsx",
+      ),
+      route(
+        "/get-threads-replies/:id",
+        "features/history/api/get-threads-replies.tsx",
+      ),
+      route(
+        "/get-threads-conversations/:id",
+        "features/history/api/get-threads-conversations.tsx",
+      ),
+      route("/get-insights", "features/history/api/get-insights.tsx"),
+      route("/update-insights", "features/history/api/update-insights.tsx"),
     ]),
     ...prefix("/chatgpt", [
       route("/create-gpt-idea", "features/chatgpt/api/create-gpt-idea.tsx"),

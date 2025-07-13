@@ -12,14 +12,28 @@ import { useIsMobile } from "~/core/hooks/use-mobile";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import DashboardSidebar from "../components/dashboard-sidebar";
+import { getDashboardStats } from "../queries";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
   const {
     data: { user },
   } = await client.auth.getUser();
+
+  // 대시보드 통계 데이터 가져오기
+  let dashboardStats = null;
+  if (user) {
+    try {
+      dashboardStats = await getDashboardStats(client, { userId: user.id });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      // 통계 로딩 실패해도 레이아웃은 계속 렌더링
+    }
+  }
+
   return {
     user,
+    dashboardStats,
   };
 }
 

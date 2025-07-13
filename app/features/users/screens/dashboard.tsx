@@ -30,104 +30,18 @@ export const meta: Route.MetaFunction = () => {
   return [{ title: `Dashboard | ${import.meta.env.VITE_APP_NAME}` }];
 };
 
-export default function Dashboard() {
-  // 통합 통계 데이터
-  const integratedStats = [
-    {
-      date: "2024-01-01",
-      posts: 3,
-      totalLikes: 450,
-      totalFollowers: 1500,
-      followerGrowth: 25,
-      followerGrowthRate: 1.67, // 전일대비 증감율 (%)
-      totalShares: 12,
-      totalReposts: 8,
-    },
-    {
-      date: "2024-01-02",
-      posts: 5,
-      totalLikes: 680,
-      totalFollowers: 1525,
-      followerGrowth: 30,
-      followerGrowthRate: 2.0,
-      totalShares: 18,
-      totalReposts: 15,
-    },
-    {
-      date: "2024-01-03",
-      posts: 2,
-      totalLikes: 320,
-      totalFollowers: 1540,
-      followerGrowth: 15,
-      followerGrowthRate: 0.98,
-      totalShares: 8,
-      totalReposts: 6,
-    },
-    {
-      date: "2024-01-04",
-      posts: 7,
-      totalLikes: 890,
-      totalFollowers: 1570,
-      followerGrowth: 45,
-      followerGrowthRate: 1.95,
-      totalShares: 25,
-      totalReposts: 22,
-    },
-    {
-      date: "2024-01-05",
-      posts: 4,
-      totalLikes: 520,
-      totalFollowers: 1600,
-      followerGrowth: 30,
-      followerGrowthRate: 1.91,
-      totalShares: 15,
-      totalReposts: 12,
-    },
-    {
-      date: "2024-01-06",
-      posts: 6,
-      totalLikes: 750,
-      totalFollowers: 1630,
-      followerGrowth: 35,
-      followerGrowthRate: 1.88,
-      totalShares: 20,
-      totalReposts: 18,
-    },
-    {
-      date: "2024-01-07",
-      posts: 3,
-      totalLikes: 480,
-      totalFollowers: 1660,
-      followerGrowth: 30,
-      followerGrowthRate: 1.84,
-      totalShares: 12,
-      totalReposts: 10,
-    },
-  ];
-
-  // 평균값 계산
-  const averages = {
-    posts: Math.round(
-      integratedStats.reduce((sum, stat) => sum + stat.posts, 0) /
-        integratedStats.length,
-    ),
-    likes: Math.round(
-      integratedStats.reduce((sum, stat) => sum + stat.totalLikes, 0) /
-        integratedStats.length,
-    ),
-    followers: Math.round(
-      integratedStats.reduce((sum, stat) => sum + stat.followerGrowth, 0) /
-        integratedStats.length,
-    ),
-    shares: Math.round(
-      integratedStats.reduce((sum, stat) => sum + stat.totalShares, 0) /
-        integratedStats.length,
-    ),
-    reposts: Math.round(
-      integratedStats.reduce((sum, stat) => sum + stat.totalReposts, 0) /
-        integratedStats.length,
-    ),
+export default function Dashboard({ loaderData }: { loaderData: any }) {
+  // 통계 데이터가 없으면 기본값 사용
+  const averages = loaderData?.dashboardStats?.averages || {
+    posts: 0,
+    likes: 0,
+    shares: 0,
+    comments: 0,
+    views: 0,
+    followers: 0,
   };
+
+  const dailyStats = loaderData?.dashboardStats?.dailyStats || [];
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -244,73 +158,74 @@ export default function Dashboard() {
                 <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
                   <NumberTicker
                     className="text-lg font-bold text-orange-600 dark:text-orange-400"
-                    value={averages.reposts}
+                    value={averages.comments}
                   />
                 </div>
-                <div className="text-muted-foreground text-xs">
-                  평균 리포스트
-                </div>
+                <div className="text-muted-foreground text-xs">평균 답글</div>
               </div>
             </div>
 
             {/* 일별 상세 통계 */}
             <div className="space-y-3">
-              {integratedStats.map((stat, index) => (
-                <div
-                  key={index}
-                  className="rounded-lg border p-4 dark:border-gray-700"
-                >
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {new Date(stat.date).toLocaleDateString("ko-KR", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {stat.posts}개 글
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
-                    <div className="flex items-center gap-1">
-                      <Heart className="h-4 w-4 text-red-500" />
-                      <span className="text-sm">{stat.totalLikes}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">+{stat.followerGrowth}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {stat.followerGrowthRate >= 0 ? (
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 text-red-500" />
-                      )}
-                      <span
-                        className={`text-sm ${stat.followerGrowthRate >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                      >
-                        {stat.followerGrowthRate >= 0 ? "+" : ""}
-                        {stat.followerGrowthRate}%
+              {dailyStats.length > 0 ? (
+                dailyStats.map((stat: any, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border p-4 dark:border-gray-700"
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        {new Date(stat.date).toLocaleDateString("ko-KR", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {stat.posts}개 글
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Share2 className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm">{stat.totalShares}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Repeat className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm">{stat.totalReposts}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm">{stat.totalFollowers}</span>
+
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+                      <div className="flex items-center gap-1">
+                        <Heart className="h-4 w-4 text-red-500" />
+                        <span className="text-sm">{stat.total_likes}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">+{stat.total_followers}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          {/* FIXME: 팔로워 증가율 계산을 위해서는 이전 날짜의 팔로워 수가 필요합니다 */}
+                          N/A
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Share2 className="h-4 w-4 text-purple-500" />
+                        <span className="text-sm">{stat.total_shares}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Repeat className="h-4 w-4 text-orange-500" />
+                        <span className="text-sm">{stat.total_comments}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">{stat.total_views}</span>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground dark:text-gray-400">
+                    아직 통계 데이터가 없습니다.
+                    <br />첫 번째 글을 작성해보세요!
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </CardContent>

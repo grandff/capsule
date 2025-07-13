@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       keywords: {
@@ -246,15 +251,79 @@ export type Database = {
           },
         ]
       }
+      thread_keywords: {
+        Row: {
+          created_at: string
+          keyword_id: number
+          thread_id: number
+        }
+        Insert: {
+          created_at?: string
+          keyword_id: number
+          thread_id: number
+        }
+        Update: {
+          created_at?: string
+          keyword_id?: number
+          thread_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_keywords_keyword_id_keywords_keyword_id_fk"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keywords"
+            referencedColumns: ["keyword_id"]
+          },
+          {
+            foreignKeyName: "thread_keywords_thread_id_threads_thread_id_fk"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["thread_id"]
+          },
+        ]
+      }
+      thread_properties: {
+        Row: {
+          created_at: string
+          property_id: number
+          thread_id: number
+        }
+        Insert: {
+          created_at?: string
+          property_id: number
+          thread_id: number
+        }
+        Update: {
+          created_at?: string
+          property_id?: number
+          thread_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_properties_property_id_properties_property_id_fk"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "thread_properties_thread_id_threads_thread_id_fk"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["thread_id"]
+          },
+        ]
+      }
       threads: {
         Row: {
           comment_cnt: number
           created_at: string
-          keyword_id: number | null
           like_cnt: number
           now_follow_cnt: number
           profile_id: string | null
-          property_id: number | null
           result_id: string | null
           send_flag: boolean
           share_cnt: number
@@ -268,11 +337,9 @@ export type Database = {
         Insert: {
           comment_cnt?: number
           created_at?: string
-          keyword_id?: number | null
           like_cnt?: number
           now_follow_cnt?: number
           profile_id?: string | null
-          property_id?: number | null
           result_id?: string | null
           send_flag?: boolean
           share_cnt?: number
@@ -286,11 +353,9 @@ export type Database = {
         Update: {
           comment_cnt?: number
           created_at?: string
-          keyword_id?: number | null
           like_cnt?: number
           now_follow_cnt?: number
           profile_id?: string | null
-          property_id?: number | null
           result_id?: string | null
           send_flag?: boolean
           share_cnt?: number
@@ -303,25 +368,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "threads_keyword_id_keywords_keyword_id_fk"
-            columns: ["keyword_id"]
-            isOneToOne: false
-            referencedRelation: "keywords"
-            referencedColumns: ["keyword_id"]
-          },
-          {
             foreignKeyName: "threads_profile_id_profiles_profile_id_fk"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["profile_id"]
-          },
-          {
-            foreignKeyName: "threads_property_id_properties_property_id_fk"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -393,6 +444,89 @@ export type Database = {
           },
         ]
       }
+      user_insights: {
+        Row: {
+          created_at: string
+          end_time: string
+          insight_id: number
+          metric_name: string
+          metric_type: string
+          period: string
+          profile_id: string
+          thread_id: number
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          insight_id?: never
+          metric_name: string
+          metric_type: string
+          period: string
+          profile_id: string
+          thread_id: number
+          value: number
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          insight_id?: never
+          metric_name?: string
+          metric_type?: string
+          period?: string
+          profile_id?: string
+          thread_id?: number
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_insights_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "user_insights_thread_id_threads_thread_id_fk"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["thread_id"]
+          },
+        ]
+      }
+      user_metrics: {
+        Row: {
+          last_updated: string
+          metric_id: number
+          metric_name: string
+          profile_id: string
+          total_value: number
+        }
+        Insert: {
+          last_updated?: string
+          metric_id?: never
+          metric_name: string
+          profile_id: string
+          total_value: number
+        }
+        Update: {
+          last_updated?: string
+          metric_id?: never
+          metric_name?: string
+          profile_id?: string
+          total_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_metrics_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -402,7 +536,7 @@ export type Database = {
     }
     Enums: {
       notification_type: "thread" | "X" | "following" | "challenge"
-      property_type: "mood" | "work" | "tone"
+      property_type: "mood" | "work"
       target_type: "thread" | "X"
       trend_type: "trending" | "topic" | "users" | "hot"
     }
@@ -412,21 +546,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -444,14 +582,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -467,14 +607,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -490,14 +632,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -505,14 +649,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
@@ -521,7 +667,7 @@ export const Constants = {
   public: {
     Enums: {
       notification_type: ["thread", "X", "following", "challenge"],
-      property_type: ["mood", "work", "tone"],
+      property_type: ["mood", "work"],
       target_type: ["thread", "X"],
       trend_type: ["trending", "topic", "users", "hot"],
     },

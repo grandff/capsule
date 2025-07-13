@@ -36,7 +36,6 @@ interface PromotionResult {
   content: string;
   originalText: string;
   moods: string[];
-  tones: string[];
   keywords: string[];
   intents: string[];
   length: string;
@@ -59,7 +58,6 @@ const promotionResultSchema = z.object({
   content: z.string(),
   originalText: z.string(),
   moods: z.array(z.string()),
-  tones: z.array(z.string()),
   keywords: z.array(z.string()),
   intents: z.array(z.string()).optional(),
   length: z.string().optional(),
@@ -100,6 +98,7 @@ export default function WriteResult() {
   const loaderData = useLoaderData() as LoaderData;
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploadError, setUploadError] = useState<string>("");
@@ -107,6 +106,7 @@ export default function WriteResult() {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -224,6 +224,9 @@ export default function WriteResult() {
     // 파일들을 상태에 추가
     setUploadedFiles((prev) => [...prev, ...newFiles]);
 
+    // 파일 업로드 시작
+    setIsFileUploading(true);
+
     // 각 파일을 API를 통해 업로드
     for (const file of newFiles) {
       try {
@@ -245,6 +248,9 @@ export default function WriteResult() {
         setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id));
       }
     }
+
+    // 파일 업로드 완료
+    setIsFileUploading(false);
 
     // 파일 입력 초기화
     if (fileInputRef.current) {
@@ -343,8 +349,10 @@ export default function WriteResult() {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(displayContent);
+      setIsCopied(true);
       toast.success("홍보글이 클립보드에 복사되었습니다!", {
         autoClose: 3000,
+        onClose: () => setIsCopied(false),
       });
     } catch (error) {
       toast.error("복사에 실패했습니다.", {
@@ -362,34 +370,102 @@ export default function WriteResult() {
     setIsUploading(true);
 
     // 파일 개수에 따른 분기 처리
-    const hasMultipleFiles = uploadedFiles.length > 1;
-    console.log(
-      `파일 개수: ${uploadedFiles.length}, 다중 파일: ${hasMultipleFiles}`,
+    const uploadedFilesCount = uploadedFiles.filter((f) => f.isUploaded).length;
+    const hasMultipleFiles = uploadedFilesCount > 1;
+
+    console.log(`=== 파일 업로드 정보 ===`);
+    console.log(`총 파일 개수: ${uploadedFiles.length}`);
+    console.log(`업로드 완료된 파일 개수: ${uploadedFilesCount}`);
+    console.log(`다중 파일 여부: ${hasMultipleFiles}`);
+
+    // 업로드된 파일들의 URL 로깅
+    const uploadedFilesWithUrls = uploadedFiles.filter(
+      (f) => f.isUploaded && f.uploadedUrl,
     );
+    uploadedFilesWithUrls.forEach((file, index) => {
+      console.log(`파일 ${index + 1}: ${file.name} (${file.type})`);
+      console.log(`Public URL: ${file.uploadedUrl}`);
+    });
 
     if (platform === "threads") {
       const formData = new FormData();
-      // TODO 카테고리, 키워드 까지 전송
       formData.append("shortText", result.originalText);
       formData.append("text", displayContent); // 편집된 내용 사용
+      formData.append("keywords", result.keywords.join(","));
+      formData.append("moods", result.moods.join(","));
+      formData.append("intents", result.intents?.join(",") || "");
 
-      // 업로드된 파일이 있으면 첫 번째 파일의 URL 전송
-      const uploadedFile = uploadedFiles.find((f) => f.isUploaded);
-      if (uploadedFile && uploadedFile.uploadedUrl) {
-        if (uploadedFile.type === "image") {
-          formData.append("imageUrl", uploadedFile.uploadedUrl);
-        } else if (uploadedFile.type === "video") {
-          formData.append("videoUrl", uploadedFile.uploadedUrl);
+      // 파일 개수에 따른 분기 처리
+      if (uploadedFilesCount === 1) {
+        // 단일 파일 처리
+        const uploadedFile = uploadedFiles.find((f) => f.isUploaded);
+        if (uploadedFile && uploadedFile.uploadedUrl) {
+          console.log(
+            `단일 파일 전송: ${uploadedFile.type} - ${uploadedFile.uploadedUrl}`,
+          );
+          if (uploadedFile.type === "image") {
+            formData.append("imageUrl", uploadedFile.uploadedUrl);
+          } else if (uploadedFile.type === "video") {
+            formData.append("videoUrl", uploadedFile.uploadedUrl);
+          }
+        }
+      } else if (uploadedFilesCount > 1) {
+        // 다중 파일 처리
+        console.log(`다중 파일 전송 시작 (${uploadedFilesCount}개)`);
+        const imageUrls: string[] = [];
+        const videoUrls: string[] = [];
+
+        uploadedFilesWithUrls.forEach((file) => {
+          if (file.type === "image") {
+            imageUrls.push(file.uploadedUrl!);
+          } else if (file.type === "video") {
+            videoUrls.push(file.uploadedUrl!);
+          }
+        });
+
+        // 이미지와 비디오 URL들을 쉼표로 구분하여 전송
+        if (imageUrls.length > 0) {
+          formData.append("imageUrls", imageUrls.join(","));
+          console.log(`이미지 URLs: ${imageUrls.join(", ")}`);
+        }
+        if (videoUrls.length > 0) {
+          formData.append("videoUrls", videoUrls.join(","));
+          console.log(`비디오 URLs: ${videoUrls.join(", ")}`);
         }
       }
 
-      // 비동기 API 호출 (백그라운드)
-      fetch("/api/write/send-to-thread", {
-        method: "POST",
-        body: formData,
-      });
-      // 바로 글 목록으로 이동
-      navigate(`/dashboard/history?upload=success&platform=${platform}`);
+      try {
+        // API 호출
+        const response = await fetch("/api/write/send-to-thread", {
+          method: "POST",
+          body: formData,
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok && responseData.success) {
+          // 성공 시 바로 목록으로 이동
+          toast.success(
+            "홍보글이 저장되었습니다. Threads 업로드가 진행 중입니다.",
+            {
+              autoClose: 3000,
+            },
+          );
+          navigate(`/dashboard/history?upload=success&platform=${platform}`);
+        } else {
+          // 실패 시 에러 메시지 표시
+          toast.error(responseData.message || "업로드에 실패했습니다.", {
+            autoClose: 5000,
+          });
+          setIsUploading(false);
+        }
+      } catch (error) {
+        console.error("API 호출 중 오류:", error);
+        toast.error("업로드 중 오류가 발생했습니다.", {
+          autoClose: 5000,
+        });
+        setIsUploading(false);
+      }
       return;
     }
 
@@ -482,16 +558,6 @@ export default function WriteResult() {
               </div>
 
               <div>
-                <h4 className="mb-2 font-medium">톤</h4>
-                <div className="flex flex-wrap gap-2">
-                  {result.tones.map((tone) => (
-                    <Badge key={tone} variant="secondary">
-                      {tone}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div>
                 <h4 className="mb-2 font-medium">키워드</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.keywords.map((keyword) => (
@@ -566,10 +632,18 @@ export default function WriteResult() {
                         onClick={handleCopy}
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-2"
+                        className={`flex items-center gap-2 transition-all duration-200 ${
+                          isCopied
+                            ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40"
+                            : ""
+                        }`}
                       >
-                        <Copy className="size-4" />
-                        복사하기
+                        {isCopied ? (
+                          <CheckCircle2Icon className="size-4" />
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                        {isCopied ? "복사됨" : "복사하기"}
                       </Button>
                     </>
                   )}
@@ -742,13 +816,18 @@ export default function WriteResult() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  disabled={isUploading}
+                  disabled={isUploading || isFileUploading}
                   className="bg-blue-600 px-8 py-3 text-lg hover:bg-blue-700"
                 >
                   {isUploading ? (
                     <>
                       <Loader2Icon className="mr-2 size-5 animate-spin" />
                       업로드 중...
+                    </>
+                  ) : isFileUploading ? (
+                    <>
+                      <Loader2Icon className="mr-2 size-5 animate-spin" />
+                      파일 업로드 중...
                     </>
                   ) : (
                     <>
@@ -761,7 +840,7 @@ export default function WriteResult() {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
                   onClick={() => handleUpload("threads")}
-                  disabled={isUploading}
+                  disabled={isUploading || isFileUploading}
                   className="cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
@@ -771,7 +850,7 @@ export default function WriteResult() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleUpload("x")}
-                  disabled={isUploading}
+                  disabled={isUploading || isFileUploading}
                   className="cursor-pointer opacity-50"
                 >
                   <div className="flex items-center gap-2">

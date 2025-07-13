@@ -10,9 +10,18 @@ import {
   LENGTH_OPTIONS,
   MOOD_OPTIONS,
   TIMEFRAME_OPTIONS,
-  TONE_OPTIONS,
   WEATHER_OPTIONS,
 } from "~/constants";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/core/components/ui/alert-dialog";
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 import { Input } from "~/core/components/ui/input";
@@ -23,9 +32,7 @@ export default function WriteToday() {
   const [showMoodSelection, setShowMoodSelection] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showAllMoods, setShowAllMoods] = useState(false);
-  const [showAllTones, setShowAllTones] = useState(false);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
-  const [selectedTones, setSelectedTones] = useState<string[]>([]);
   const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
   const [selectedLength, setSelectedLength] = useState<string>("");
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("");
@@ -41,6 +48,8 @@ export default function WriteToday() {
   const [isTextReadonly, setIsTextReadonly] = useState(false);
   const [moodButtonText, setMoodButtonText] = useState("홍보글 설정하기");
   const [writeMode, setWriteMode] = useState<"good" | "search">("good");
+  const [showTokenAlert, setShowTokenAlert] = useState(false);
+  const [tokenAlertMessage, setTokenAlertMessage] = useState("");
 
   const navigate = useNavigate();
   const maxLength = 100;
@@ -48,7 +57,6 @@ export default function WriteToday() {
 
   // 최대 선택 개수 설정
   const MAX_MOODS = 3;
-  const MAX_TONES = 3;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -84,25 +92,6 @@ export default function WriteToday() {
         return;
       }
       setSelectedMoods((prev) => [...prev, mood]);
-      setMaxSelectionError(""); // 에러 메시지 제거
-    }
-  };
-
-  // 톤 선택 핸들러
-  const handleToneToggle = (tone: string) => {
-    if (selectedTones.includes(tone)) {
-      // 이미 선택된 항목이면 제거
-      setSelectedTones((prev) => prev.filter((t) => t !== tone));
-      setMaxSelectionError(""); // 에러 메시지 제거
-    } else {
-      // 새로운 항목 선택 시 최대 개수 확인
-      if (selectedTones.length >= MAX_TONES) {
-        setMaxSelectionError(`톤은 최대 ${MAX_TONES}개까지 선택 가능합니다.`);
-        // 3초 후 에러 메시지 자동 제거
-        setTimeout(() => setMaxSelectionError(""), 3000);
-        return;
-      }
-      setSelectedTones((prev) => [...prev, tone]);
       setMaxSelectionError(""); // 에러 메시지 제거
     }
   };
@@ -146,7 +135,6 @@ export default function WriteToday() {
   // 홍보글 만들기 버튼 활성화 조건
   const canCreatePromotion =
     selectedMoods.length > 0 &&
-    selectedTones.length > 0 &&
     keywords.length > 0 &&
     selectedIntents.length > 0;
 
@@ -155,7 +143,6 @@ export default function WriteToday() {
     const missingItems = [];
 
     if (selectedMoods.length === 0) missingItems.push("분위기");
-    if (selectedTones.length === 0) missingItems.push("톤");
     if (keywords.length === 0) missingItems.push("핵심 키워드");
     if (selectedIntents.length === 0) missingItems.push("목적");
 
@@ -175,14 +162,12 @@ export default function WriteToday() {
       // 1. 프롬프트 가져오기
       const prompts = await fetch("/api/write/prompts");
       const promptsData = await prompts.json();
-      console.log(promptsData);
 
       // 2. 생성 요청
       const formData = new FormData();
       formData.append("prompt", promptsData.prompts);
       formData.append("text", text);
       formData.append("mood", selectedMoods.join(","));
-      formData.append("tone", selectedTones.join(","));
       formData.append("keyword", keywords.join(","));
       formData.append("intent", selectedIntents[0] || "미설정");
       formData.append(
@@ -219,7 +204,6 @@ export default function WriteToday() {
                 content: completion,
                 originalText: text,
                 moods: selectedMoods,
-                tones: selectedTones,
                 keywords,
                 intents: selectedIntents,
                 length: selectedLength,
@@ -252,11 +236,31 @@ export default function WriteToday() {
   };
 
   // 분위기 선택 버튼 핸들러
-  const handleMoodButtonClick = () => {
+  const handleMoodButtonClick = async () => {
     if (!showMoodSelection) {
-      setShowMoodSelection(true);
-      setIsTextReadonly(true);
-      setMoodButtonText("다시 작성하기");
+      // 토큰 확인
+      try {
+        const response = await fetch("/api/write/check-token", {
+          method: "POST",
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          setTokenAlertMessage(result.message);
+          setShowTokenAlert(true);
+          return;
+        }
+
+        // 토큰이 있으면 홍보글 설정 화면으로 이동
+        setShowMoodSelection(true);
+        setIsTextReadonly(true);
+        setMoodButtonText("다시 작성하기");
+      } catch (error) {
+        console.error("토큰 확인 중 오류:", error);
+        setTokenAlertMessage("토큰 확인 중 오류가 발생했습니다.");
+        setShowTokenAlert(true);
+      }
     } else {
       setShowMoodSelection(false);
       setIsTextReadonly(false);
@@ -465,58 +469,6 @@ export default function WriteToday() {
                 )}
               </div>
 
-              {/* 톤 선택 */}
-              <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    어떤 말투/느낌으로 쓸까요?
-                  </h3>
-                  {selectedTones.length < MAX_TONES ? (
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {MAX_TONES - selectedTones.length}개 더 선택 가능해요!
-                    </span>
-                  ) : (
-                    <span className="text-sm text-red-500 dark:text-red-400">
-                      모두 선택했어요!
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {(showAllTones ? TONE_OPTIONS : TONE_OPTIONS.slice(0, 5)).map(
-                    (tone) => (
-                      <Badge
-                        key={tone}
-                        variant={
-                          selectedTones.includes(tone) ? "default" : "outline"
-                        }
-                        className={`cursor-pointer px-4 py-2 text-sm font-medium transition-all ${
-                          selectedTones.includes(tone)
-                            ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                            : "hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        }`}
-                        onClick={() => handleToneToggle(tone)}
-                      >
-                        {tone}
-                      </Badge>
-                    ),
-                  )}
-                </div>
-                {TONE_OPTIONS.length > 5 && (
-                  <div className="mt-3">
-                    <Button
-                      onClick={() => setShowAllTones(!showAllTones)}
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-300 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                      {showAllTones
-                        ? "접기"
-                        : `더 보기 (${TONE_OPTIONS.length - 5}개 더)`}
-                    </Button>
-                  </div>
-                )}
-              </div>
-
               {/* 최대 선택 에러 메시지 */}
               {maxSelectionError && (
                 <div className="rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
@@ -713,6 +665,29 @@ export default function WriteToday() {
           </div>
         </div>
       )}
+
+      {/* 토큰 확인 Alert Dialog */}
+      <AlertDialog open={showTokenAlert} onOpenChange={setShowTokenAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Threads 계정 연결 필요</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tokenAlertMessage}
+              <br />
+              <br />
+              홍보글을 작성하려면 먼저 Threads 계정을 연결해주세요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => navigate("/dashboard/sns/connect")}
+            >
+              Threads 연결하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 애니메이션 스타일 */}
       <style>{`

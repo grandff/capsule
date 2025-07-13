@@ -13,9 +13,6 @@ const IdeaSchema = z.object({
   mood: z.string({
     description: "사용자가 원하는 분위기를 선택함.",
   }),
-  tone: z.string({
-    description: "사용자가 원하는 톤을 선택함.",
-  }),
   keyword: z.string({
     description: "사용자가 원하는 키워드를 입력함.",
   }),
@@ -44,6 +41,7 @@ const IdeaSchema = z.object({
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
+  console.log("formData");
   console.log(formData);
   const {
     success,

@@ -36,7 +36,6 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
 요구사항:
 - 분위기: {{moods}}
 - 산업군: {{industries}}
-- 톤: {{tones}}
 - 핵심 키워드: {{keywords}}
 {{#if intents}}- 의도: {{intents}}{{/if}}
 {{#if length}}- 글 길이: {{length}}{{/if}}
@@ -49,7 +48,7 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
 3. 적절한 이모지 사용
 4. 관련 해시태그 3-5개
 
-포스트는 {{moods}}한 분위기로, {{tones}}한 톤을 유지하며, {{industries}} 분야에 적합하게 작성해주세요.`,
+포스트는 {{moods}}한 분위기로, {{industries}} 분야에 적합하게 작성해주세요.`,
     variables: [
       {
         name: "userText",
@@ -58,7 +57,6 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
       },
       { name: "moods", description: "선택된 분위기들", required: true },
       { name: "industries", description: "선택된 산업군들", required: true },
-      { name: "tones", description: "선택된 톤들", required: true },
       { name: "keywords", description: "핵심 키워드들", required: true },
       { name: "intents", description: "의도", required: false },
       { name: "length", description: "글 길이", required: false },
@@ -82,7 +80,6 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
 마케팅 요구사항:
 - 분위기: {{moods}}
 - 산업군: {{industries}}
-- 톤: {{tones}}
 - 핵심 키워드: {{keywords}}
 {{#if intents}}- 의도: {{intents}}{{/if}}
 
@@ -100,7 +97,7 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
 - 행동 유도 문구
 - 관련 해시태그
 
-{{moods}}한 분위기와 {{tones}}한 톤을 유지하며, {{industries}} 분야의 전문성을 드러내주세요.`,
+{{moods}}한 분위기로, {{industries}} 분야의 전문성을 드러내주세요.`,
     variables: [
       {
         name: "userText",
@@ -109,7 +106,6 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
       },
       { name: "moods", description: "선택된 분위기들", required: true },
       { name: "industries", description: "선택된 산업군들", required: true },
-      { name: "tones", description: "선택된 톤들", required: true },
       { name: "keywords", description: "핵심 키워드들", required: true },
       { name: "intents", description: "의도", required: false },
     ],
@@ -130,7 +126,6 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
 스타일 요구사항:
 - 분위기: {{moods}}
 - 산업군: {{industries}}
-- 톤: {{tones}}
 - 핵심 키워드: {{keywords}}
 {{#if weather}}- 날씨: {{weather}}{{/if}}
 
@@ -141,7 +136,7 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
 4. 적절한 이모지 사용으로 감정 표현
 5. 일상의 소소한 깨달음이나 재미있는 순간 강조
 
-{{moods}}한 분위기로, {{tones}}한 톤을 유지하며, {{industries}} 분야와 연관된 인사이트를 담아주세요.`,
+{{moods}}한 분위기로, {{industries}} 분야와 연관된 인사이트를 담아주세요.`,
     variables: [
       {
         name: "userText",
@@ -150,7 +145,6 @@ const DEFAULT_PROMPTS: PromptTemplate[] = [
       },
       { name: "moods", description: "선택된 분위기들", required: true },
       { name: "industries", description: "선택된 산업군들", required: true },
-      { name: "tones", description: "선택된 톤들", required: true },
       { name: "keywords", description: "핵심 키워드들", required: true },
       { name: "weather", description: "날씨", required: false },
     ],
@@ -330,7 +324,6 @@ class PromptService {
   recommendPrompt(settings: {
     moods: string[];
     industries: string[];
-    tones: string[];
     intents?: string[];
   }): PromptTemplate | null {
     const activePrompts = this.getAllActivePrompts();

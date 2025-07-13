@@ -1,9 +1,11 @@
 import {
   bigint,
   boolean,
+  index,
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -30,15 +32,6 @@ export const threads = pgTable("threads", {
     .generatedAlwaysAsIdentity(),
   short_text: text().notNull(),
   thread: text().notNull(),
-  property_id: bigint({ mode: "number" }).references(
-    () => properties.property_id,
-    {
-      onDelete: "cascade",
-    },
-  ),
-  keyword_id: bigint({ mode: "number" }).references(() => keywords.keyword_id, {
-    onDelete: "cascade",
-  }),
   target_type: targetType().notNull(),
   send_flag: boolean().notNull().default(false),
   result_id: text(),
@@ -54,26 +47,124 @@ export const threads = pgTable("threads", {
   updated_at: timestamp().notNull().defaultNow(),
 });
 
-export const keywords = pgTable("keywords", {
-  keyword_id: bigint({ mode: "number" })
-    .primaryKey()
-    .generatedAlwaysAsIdentity(),
-  sort_seq: integer().notNull().default(0),
-  keyword: text().notNull(),
-  created_at: timestamp().notNull().defaultNow(),
-  updated_at: timestamp().notNull().defaultNow(),
-});
+// 사용자 인사이트 시계열 데이터 테이블
+export const userInsights = pgTable(
+  "user_insights",
+  {
+    insight_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    thread_id: bigint({ mode: "number" })
+      .references(() => threads.thread_id, { onDelete: "cascade" })
+      .notNull(),
+    metric_name: text().notNull(), // "views", "followers_count" 등
+    metric_type: text().notNull(), // "timeseries" 또는 "total"
+    period: text().notNull(), // "day", "week", "month"
+    value: integer().notNull(),
+    end_time: timestamp().notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => ({
+    profileThreadIdx: index("profile_thread_idx").on(
+      table.profile_id,
+      table.thread_id,
+    ),
+    metricIdx: index("metric_idx").on(table.metric_name),
+    endTimeIdx: index("end_time_idx").on(table.end_time),
+  }),
+);
 
-export const properties = pgTable("properties", {
-  property_id: bigint({ mode: "number" })
-    .primaryKey()
-    .generatedAlwaysAsIdentity(),
-  sort_seq: integer().notNull().default(0),
-  property_type: propertyType().notNull(),
-  property: text().notNull(),
-  created_at: timestamp().notNull().defaultNow(),
-  updated_at: timestamp().notNull().defaultNow(),
-});
+// 사용자 총계 지표 테이블 (메인 화면 통계용)
+export const userMetrics = pgTable(
+  "user_metrics",
+  {
+    metric_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    metric_name: text().notNull(), // "total_views", "total_reposts", "total_quotes"
+    total_value: integer().notNull(),
+    last_updated: timestamp().notNull().defaultNow(),
+  },
+  (table) => ({
+    profileMetricIdx: index("profile_metric_idx").on(
+      table.profile_id,
+      table.metric_name,
+    ),
+  }),
+);
+
+// 다대다 관계 테이블들
+export const threadKeywords = pgTable(
+  "thread_keywords",
+  {
+    thread_id: bigint({ mode: "number" })
+      .references(() => threads.thread_id, { onDelete: "cascade" })
+      .notNull(),
+    keyword_id: bigint({ mode: "number" })
+      .references(() => keywords.keyword_id, { onDelete: "cascade" })
+      .notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.thread_id, table.keyword_id] }),
+  }),
+);
+
+export const threadProperties = pgTable(
+  "thread_properties",
+  {
+    thread_id: bigint({ mode: "number" })
+      .references(() => threads.thread_id, { onDelete: "cascade" })
+      .notNull(),
+    property_id: bigint({ mode: "number" })
+      .references(() => properties.property_id, { onDelete: "cascade" })
+      .notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.thread_id, table.property_id] }),
+  }),
+);
+
+export const keywords = pgTable(
+  "keywords",
+  {
+    keyword_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    sort_seq: integer().notNull().default(0),
+    keyword: text().notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+    updated_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => ({
+    keywordIdx: index("keyword_idx").on(table.keyword),
+  }),
+);
+
+export const properties = pgTable(
+  "properties",
+  {
+    property_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    sort_seq: integer().notNull().default(0),
+    property_type: propertyType().notNull(),
+    property: text().notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+    updated_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => ({
+    propertyIdx: index("property_idx").on(table.property),
+    propertyTypeIdx: index("property_type_idx").on(table.property_type),
+  }),
+);
 
 // 프롬프트 관련 스키마
 export const PromptTypeSchema = z.enum([
@@ -122,7 +213,6 @@ export const PromptRequestSchema = z.object({
   settings: z.object({
     moods: z.array(z.string()),
     industries: z.array(z.string()),
-    tones: z.array(z.string()),
     keywords: z.array(z.string()),
     intents: z.array(z.string()).optional(),
     length: z.string().optional(),
@@ -150,7 +240,6 @@ export const WriteRequestSchema = z.object({
   text: z.string().min(10, "최소 10자 이상 작성해주세요"),
   moods: z.array(z.string()).min(1, "분위기를 선택해주세요"),
   industries: z.array(z.string()).min(1, "산업군을 선택해주세요"),
-  tones: z.array(z.string()).min(1, "톤을 선택해주세요"),
   keywords: z.array(z.string()).min(1, "키워드를 입력해주세요"),
   intents: z.array(z.string()).optional(),
   length: z.string().optional(),
@@ -163,7 +252,6 @@ export const WriteResponseSchema = z.object({
   originalText: z.string(),
   moods: z.array(z.string()),
   industries: z.array(z.string()),
-  tones: z.array(z.string()),
   keywords: z.array(z.string()),
   intents: z.array(z.string()).optional(),
   length: z.string().optional(),
@@ -179,3 +267,19 @@ export type PromptRequest = z.infer<typeof PromptRequestSchema>;
 export type PromptResponse = z.infer<typeof PromptResponseSchema>;
 export type WriteRequest = z.infer<typeof WriteRequestSchema>;
 export type WriteResponse = z.infer<typeof WriteResponseSchema>;
+
+// 테이블 타입 정의
+export type Thread = typeof threads.$inferSelect;
+export type NewThread = typeof threads.$inferInsert;
+export type Keyword = typeof keywords.$inferSelect;
+export type NewKeyword = typeof keywords.$inferInsert;
+export type Property = typeof properties.$inferSelect;
+export type NewProperty = typeof properties.$inferInsert;
+export type ThreadKeyword = typeof threadKeywords.$inferSelect;
+export type NewThreadKeyword = typeof threadKeywords.$inferInsert;
+export type ThreadProperty = typeof threadProperties.$inferSelect;
+export type NewThreadProperty = typeof threadProperties.$inferInsert;
+export type UserInsight = typeof userInsights.$inferSelect;
+export type NewUserInsight = typeof userInsights.$inferInsert;
+export type UserMetric = typeof userMetrics.$inferSelect;
+export type NewUserMetric = typeof userMetrics.$inferInsert;

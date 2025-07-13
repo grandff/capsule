@@ -1,5 +1,5 @@
 {
-  "id": "33d0e754-b4e3-4a79-a6b1-5f095f219da3",
+  "id": "6562e28f-561e-46db-a5d4-5f2d56c1b41b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -396,25 +396,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "threads_connect": {
-          "name": "threads_connect",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "threads_access_token": {
-          "name": "threads_access_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "threads_expires_at": {
-          "name": "threads_expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp",
@@ -588,6 +569,116 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.sns_profiles": {
+      "name": "sns_profiles",
+      "schema": "",
+      "columns": {
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "target_type": {
+          "name": "target_type",
+          "type": "target_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sns_profiles_profile_id_profiles_profile_id_fk": {
+          "name": "sns_profiles_profile_id_profiles_profile_id_fk",
+          "tableFrom": "sns_profiles",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "profile_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "insert-sns-profile-policy": {
+          "name": "insert-sns-profile-policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "(select auth.uid()) = \"sns_profiles\".\"profile_id\""
+        },
+        "edit-sns-profile-policy": {
+          "name": "edit-sns-profile-policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"sns_profiles\".\"profile_id\"",
+          "withCheck": "(select auth.uid()) = \"sns_profiles\".\"profile_id\""
+        },
+        "delete-sns-profile-policy": {
+          "name": "delete-sns-profile-policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"sns_profiles\".\"profile_id\""
+        },
+        "select-sns-profile-policy": {
+          "name": "select-sns-profile-policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"sns_profiles\".\"profile_id\""
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.keywords": {
       "name": "keywords",
       "schema": "",
@@ -637,7 +728,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "keyword_idx": {
+          "name": "keyword_idx",
+          "columns": [
+            {
+              "expression": "keyword",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -701,9 +808,174 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "property_idx": {
+          "name": "property_idx",
+          "columns": [
+            {
+              "expression": "property",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "property_type_idx": {
+          "name": "property_type_idx",
+          "columns": [
+            {
+              "expression": "property_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.thread_keywords": {
+      "name": "thread_keywords",
+      "schema": "",
+      "columns": {
+        "thread_id": {
+          "name": "thread_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keyword_id": {
+          "name": "keyword_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "thread_keywords_thread_id_threads_thread_id_fk": {
+          "name": "thread_keywords_thread_id_threads_thread_id_fk",
+          "tableFrom": "thread_keywords",
+          "tableTo": "threads",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "thread_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "thread_keywords_keyword_id_keywords_keyword_id_fk": {
+          "name": "thread_keywords_keyword_id_keywords_keyword_id_fk",
+          "tableFrom": "thread_keywords",
+          "tableTo": "keywords",
+          "columnsFrom": [
+            "keyword_id"
+          ],
+          "columnsTo": [
+            "keyword_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "thread_keywords_thread_id_keyword_id_pk": {
+          "name": "thread_keywords_thread_id_keyword_id_pk",
+          "columns": [
+            "thread_id",
+            "keyword_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.thread_properties": {
+      "name": "thread_properties",
+      "schema": "",
+      "columns": {
+        "thread_id": {
+          "name": "thread_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "property_id": {
+          "name": "property_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "thread_properties_thread_id_threads_thread_id_fk": {
+          "name": "thread_properties_thread_id_threads_thread_id_fk",
+          "tableFrom": "thread_properties",
+          "tableTo": "threads",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "thread_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "thread_properties_property_id_properties_property_id_fk": {
+          "name": "thread_properties_property_id_properties_property_id_fk",
+          "tableFrom": "thread_properties",
+          "tableTo": "properties",
+          "columnsFrom": [
+            "property_id"
+          ],
+          "columnsTo": [
+            "property_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "thread_properties_thread_id_property_id_pk": {
+          "name": "thread_properties_thread_id_property_id_pk",
+          "columns": [
+            "thread_id",
+            "property_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -741,18 +1013,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "property_id": {
-          "name": "property_id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "keyword_id": {
-          "name": "keyword_id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
         },
         "target_type": {
           "name": "target_type",
@@ -832,35 +1092,258 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "threads_property_id_properties_property_id_fk": {
-          "name": "threads_property_id_properties_property_id_fk",
-          "tableFrom": "threads",
-          "tableTo": "properties",
-          "columnsFrom": [
-            "property_id"
-          ],
-          "columnsTo": [
-            "property_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "threads_keyword_id_keywords_keyword_id_fk": {
-          "name": "threads_keyword_id_keywords_keyword_id_fk",
-          "tableFrom": "threads",
-          "tableTo": "keywords",
-          "columnsFrom": [
-            "keyword_id"
-          ],
-          "columnsTo": [
-            "keyword_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "threads_profile_id_profiles_profile_id_fk": {
           "name": "threads_profile_id_profiles_profile_id_fk",
           "tableFrom": "threads",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "profile_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_insights": {
+      "name": "user_insights",
+      "schema": "",
+      "columns": {
+        "insight_id": {
+          "name": "insight_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "user_insights_insight_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metric_name": {
+          "name": "metric_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metric_type": {
+          "name": "metric_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "profile_thread_idx": {
+          "name": "profile_thread_idx",
+          "columns": [
+            {
+              "expression": "profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "thread_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "metric_idx": {
+          "name": "metric_idx",
+          "columns": [
+            {
+              "expression": "metric_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "end_time_idx": {
+          "name": "end_time_idx",
+          "columns": [
+            {
+              "expression": "end_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_insights_profile_id_profiles_profile_id_fk": {
+          "name": "user_insights_profile_id_profiles_profile_id_fk",
+          "tableFrom": "user_insights",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "profile_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_insights_thread_id_threads_thread_id_fk": {
+          "name": "user_insights_thread_id_threads_thread_id_fk",
+          "tableFrom": "user_insights",
+          "tableTo": "threads",
+          "columnsFrom": [
+            "thread_id"
+          ],
+          "columnsTo": [
+            "thread_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_metrics": {
+      "name": "user_metrics",
+      "schema": "",
+      "columns": {
+        "metric_id": {
+          "name": "metric_id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "user_metrics_metric_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metric_name": {
+          "name": "metric_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_value": {
+          "name": "total_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_updated": {
+          "name": "last_updated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "profile_metric_idx": {
+          "name": "profile_metric_idx",
+          "columns": [
+            {
+              "expression": "profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "metric_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_metrics_profile_id_profiles_profile_id_fk": {
+          "name": "user_metrics_profile_id_profiles_profile_id_fk",
+          "tableFrom": "user_metrics",
           "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
@@ -900,21 +1383,20 @@
         "hot"
       ]
     },
-    "public.property_type": {
-      "name": "property_type",
-      "schema": "public",
-      "values": [
-        "mood",
-        "work",
-        "tone"
-      ]
-    },
     "public.target_type": {
       "name": "target_type",
       "schema": "public",
       "values": [
         "thread",
         "X"
+      ]
+    },
+    "public.property_type": {
+      "name": "property_type",
+      "schema": "public",
+      "values": [
+        "mood",
+        "work"
       ]
     }
   },

@@ -15,7 +15,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     `https://threads.net/oauth/authorize?` +
     `client_id=${THREADS_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-    `scope=threads_basic,threads_content_publish&` +
+    `scope=threads_basic,threads_content_publish,threads_manage_insights,threads_read_replies&` +
     `response_type=code&` +
     `state=${generateRandomState()}`;
   return redirect(authUrl);

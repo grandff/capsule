@@ -3,7 +3,6 @@ export const getBasicPrompt = (
   user_input: string,
   selected_mood: string,
   selected_industry: string,
-  selected_tone: string,
   keywords_list: string,
 ) => {
   return `
@@ -14,7 +13,6 @@ export const getBasicPrompt = (
     - 원본 메모: "${user_input}"
     - 분위기: "${selected_mood}"
     - 산업군: "${selected_industry}"
-    - 톤: "${selected_tone}"
     - 키워드: "${keywords_list}"
 
     이걸 기반으로 약 500자 이내의 글을 생성해. 조건은 다음과 같아:

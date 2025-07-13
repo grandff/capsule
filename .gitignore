@@ -1,3 +1,4 @@
+threadspi.http
 localhost*.pem
 .DS_Store
 **/node_modules/

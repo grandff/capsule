@@ -6,7 +6,6 @@ export const TARGET_TYPES = [
 export const PROPERTY_TYPES = [
   { value: "mood", label: "분위기" },
   { value: "work", label: "산업군" },
-  { value: "tone", label: "톤" },
 ];
 
 export const TREND_TYPES = [
@@ -75,34 +74,13 @@ export const INDUSTRY_OPTIONS = [
   "블록체인",
 ];
 
-export const TONE_OPTIONS = [
-  "공식적",
-  "친근함",
-  "유머러스",
-  "감성적",
-  "전문적",
-  "격식있음",
-  "캐주얼",
-  "열정적",
-  "신중함",
-  "창의적",
-  "설명적",
-  "설득적",
-  "정보성",
-  "스토리텔링",
-  "대화체",
-  "보고서형",
-  "칼럼형",
-  "소개형",
-  "추천형",
-  "리뷰형",
-];
-
 export const INTENT_OPTIONS = [
   "제품홍보",
   "이벤트 안내",
   "일상 공유",
   "후기/리뷰",
+  "경험 공유", // ✅ 자연스러운 후기 톤 유도
+  "추천/입소문", // ✅ 지인 추천처럼 말하게 유도
   "브랜딩",
   "고객유치",
   "단골 소통",
