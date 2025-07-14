@@ -50,12 +50,32 @@ export async function action({ request }: ActionFunctionArgs) {
   const moods = formData.get("moods") as string;
   const intents = formData.get("intents") as string;
 
+  // 미디어 파일 정보 파싱
+  const mediaFiles = formData.get("mediaFiles") as string;
+  let parsedMediaFiles: Array<{
+    original_filename: string;
+    public_url: string;
+    file_size: number;
+    mime_type: string;
+    storage_path: string;
+    media_type: "image" | "video";
+  }> = [];
+
+  if (mediaFiles) {
+    try {
+      parsedMediaFiles = JSON.parse(mediaFiles);
+    } catch (error) {
+      console.error("Error parsing media files:", error);
+    }
+  }
+
   console.log("=== Thread API 호출 정보 ===");
   console.log("텍스트:", text);
   console.log("단일 이미지 URL:", imageUrl);
   console.log("단일 비디오 URL:", videoUrl);
   console.log("다중 이미지 URLs:", imageUrls);
   console.log("다중 비디오 URLs:", videoUrls);
+  console.log("미디어 파일 정보:", parsedMediaFiles);
 
   // 로그인한 사용자 정보 가져오기
   const [client] = makeServerClient(request);
@@ -123,6 +143,40 @@ export async function action({ request }: ActionFunctionArgs) {
 
   console.log("로컬 DB 저장 완료, thread_id:", localThreadId);
 
+  // 미디어 파일 정보 저장
+  if (parsedMediaFiles.length > 0) {
+    try {
+      console.log("=== 미디어 파일 정보 저장 시작 ===");
+
+      const mediaDataArray = parsedMediaFiles.map((file) => ({
+        thread_id: localThreadId,
+        profile_id: user.id,
+        media_type: file.media_type,
+        original_filename: file.original_filename,
+        public_url: file.public_url,
+        file_size: file.file_size,
+        mime_type: file.mime_type,
+        storage_path: file.storage_path,
+      }));
+
+      // 미디어 파일 정보를 DB에 저장
+      const { error: mediaError } = await client
+        .from("thread_media")
+        .insert(mediaDataArray);
+
+      if (mediaError) {
+        console.error("Error saving media files:", mediaError);
+      } else {
+        console.log(
+          `${parsedMediaFiles.length}개의 미디어 파일 정보 저장 완료`,
+        );
+      }
+    } catch (mediaError) {
+      console.error("미디어 파일 정보 저장 실패:", mediaError);
+      // 미디어 파일 저장 실패는 전체 프로세스를 실패시키지 않음
+    }
+  }
+
   // Threads API 호출 (백그라운드에서 실행)
   try {
     // 미디어 처리 분기
@@ -181,55 +235,52 @@ export async function action({ request }: ActionFunctionArgs) {
     try {
       console.log("=== 사용자 인사이트 저장 시작 ===");
 
-      // 인사이트 API 호출
-      const insightsResponse = await fetch("/api/users/get-user-insights", {
-        method: "POST",
-      });
+      // 인사이트 데이터 직접 가져오기
+      const { fetchUserInsights } = await import(
+        "~/features/users/utils/insights-utils"
+      );
+      const insightsData = await fetchUserInsights(client, user.id);
 
-      if (insightsResponse.ok) {
-        const insightsData = await insightsResponse.json();
-
-        if (insightsData.success) {
-          // 시계열 데이터 저장
-          if (insightsData.timeseries?.data) {
-            for (const insight of insightsData.timeseries.data) {
-              if (insight.values) {
-                for (const value of insight.values) {
-                  await client.from("user_insights").insert({
-                    profile_id: user.id,
-                    thread_id: localThreadId,
-                    metric_name: insight.name,
-                    metric_type: "timeseries",
-                    period: insight.period,
-                    value: value.value,
-                    end_time: new Date(value.end_time).toISOString(),
-                  });
-                }
+      if (insightsData.success) {
+        // 시계열 데이터 저장
+        if (insightsData.timeseries?.data) {
+          for (const insight of insightsData.timeseries.data) {
+            if (insight.values) {
+              for (const value of insight.values) {
+                await client.from("user_insights").insert({
+                  profile_id: user.id,
+                  thread_id: localThreadId,
+                  metric_name: insight.name,
+                  metric_type: "timeseries",
+                  period: insight.period,
+                  value: value.value,
+                  end_time: new Date(value.end_time).toISOString(),
+                });
               }
             }
           }
-
-          // 총계 데이터 저장/업데이트
-          if (insightsData.total?.data) {
-            for (const metric of insightsData.total.data) {
-              if (metric.total_value) {
-                await client.from("user_metrics").upsert(
-                  {
-                    profile_id: user.id,
-                    metric_name: `total_${metric.name}`,
-                    total_value: metric.total_value.value,
-                    last_updated: new Date().toISOString(),
-                  },
-                  {
-                    onConflict: "profile_id,metric_name",
-                  },
-                );
-              }
-            }
-          }
-
-          console.log("사용자 인사이트 저장 완료");
         }
+
+        // 총계 데이터 저장/업데이트
+        if (insightsData.total?.data) {
+          for (const metric of insightsData.total.data) {
+            if (metric.total_value) {
+              await client.from("user_metrics").upsert(
+                {
+                  profile_id: user.id,
+                  metric_name: `total_${metric.name}`,
+                  total_value: metric.total_value.value,
+                  last_updated: new Date().toISOString(),
+                },
+                {
+                  onConflict: "profile_id,metric_name",
+                },
+              );
+            }
+          }
+        }
+
+        console.log("사용자 인사이트 저장 완료");
       }
     } catch (insightsError) {
       console.error("사용자 인사이트 저장 실패:", insightsError);

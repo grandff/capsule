@@ -14,8 +14,10 @@ export const threadsSingleMedia = async (
   // 미디어 타입에 따른 파라미터 설정
   if (mediaType === "image") {
     formData.append("image_url", mediaUrl);
+    formData.append("media_type", "IMAGE");
   } else {
     formData.append("video_url", mediaUrl);
+    formData.append("media_type", "VIDEO");
   }
 
   // Carousel 아이템인 경우 플래그 추가

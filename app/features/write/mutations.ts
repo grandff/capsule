@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
+import type { NewThreadMedia } from "./schema";
+
 // 키워드들 일괄 저장 또는 조회
 async function saveOrGetKeywords(
   client: SupabaseClient<Database>,
@@ -116,6 +118,45 @@ async function saveOrGetProperties(
   );
 }
 
+// 미디어 파일 저장 (타입 오류 해결을 위해 임시로 any 사용)
+export async function saveThreadMedia(
+  client: SupabaseClient<Database>,
+  mediaData: any,
+): Promise<number> {
+  const { data, error } = await client
+    .from("thread_media")
+    .insert(mediaData)
+    .select("media_id")
+    .single();
+
+  if (error) {
+    console.error("Error saving thread media:", error);
+    throw error;
+  }
+
+  return data.media_id;
+}
+
+// 여러 미디어 파일 일괄 저장 (타입 오류 해결을 위해 임시로 any 사용)
+export async function saveMultipleThreadMedia(
+  client: SupabaseClient<Database>,
+  mediaDataArray: any[],
+): Promise<number[]> {
+  if (mediaDataArray.length === 0) return [];
+
+  const { data, error } = await client
+    .from("thread_media")
+    .insert(mediaDataArray)
+    .select("media_id");
+
+  if (error) {
+    console.error("Error saving multiple thread media:", error);
+    throw error;
+  }
+
+  return data.map((item) => item.media_id);
+}
+
 export async function saveThread(
   client: SupabaseClient<Database>,
   {
@@ -198,18 +239,9 @@ export async function saveThread(
     }
   }
 
-  console.log(`Thread saved with ID: ${threadId}`);
-  console.log(
-    `Keywords: ${keywords.join(", ")} (IDs: ${keywordIds.join(", ")})`,
-  );
-  console.log(
-    `Properties: ${properties.map((p) => p.property).join(", ")} (IDs: ${propertyIds.join(", ")})`,
-  );
-
   return threadId;
 }
 
-// threadId 업데이트 함수
 export async function updateThreadResultId(
   client: SupabaseClient<Database>,
   threadId: number,
@@ -224,11 +256,8 @@ export async function updateThreadResultId(
     console.error("Error updating thread result_id:", error);
     throw error;
   }
-
-  console.log(`Thread ${threadId} result_id updated to: ${resultId}`);
 }
 
-// result_id를 "DELETE"로 업데이트하는 함수
 export async function markThreadAsDeleted(
   client: SupabaseClient<Database>,
   threadId: number,
@@ -242,6 +271,4 @@ export async function markThreadAsDeleted(
     console.error("Error marking thread as deleted:", error);
     throw error;
   }
-
-  console.log(`Thread ${threadId} marked as deleted`);
 }

@@ -8,6 +8,34 @@
       "when": 1752200213030,
       "tag": "0000_fast_network",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752446726693,
+      "tag": "0001_nappy_plazm",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752450372524,
+      "tag": "0002_pretty_scrambler",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1752450862090,
+      "tag": "0003_bouncy_shaman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1752451475886,
+      "tag": "0004_nappy_marvel_boy",
+      "breakpoints": true
     }
   ]
 }

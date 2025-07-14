@@ -14,6 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_members: {
+        Row: {
+          challenge_id: string
+          joined_at: string
+          member_id: number
+          profile_id: string
+          sort_seq: number
+        }
+        Insert: {
+          challenge_id: string
+          joined_at?: string
+          member_id?: never
+          profile_id: string
+          sort_seq?: number
+        }
+        Update: {
+          challenge_id?: string
+          joined_at?: string
+          member_id?: never
+          profile_id?: string
+          sort_seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_members_challenge_id_challenges_challenge_id_fk"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["challenge_id"]
+          },
+          {
+            foreignKeyName: "challenge_members_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      challenge_submits: {
+        Row: {
+          challenge_id: string
+          profile_id: string
+          sort_seq: number
+          submit_ctt: string
+          submit_id: number
+          submitted_at: string
+        }
+        Insert: {
+          challenge_id: string
+          profile_id: string
+          sort_seq?: number
+          submit_ctt: string
+          submit_id?: never
+          submitted_at?: string
+        }
+        Update: {
+          challenge_id?: string
+          profile_id?: string
+          sort_seq?: number
+          submit_ctt?: string
+          submit_id?: never
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_submits_challenge_id_challenges_challenge_id_fk"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["challenge_id"]
+          },
+          {
+            foreignKeyName: "challenge_submits_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          challenge_ctt: string
+          challenge_id: string
+          challenge_ttl: string
+          created_at: string
+          end_date: string
+          max_member_cnt: number
+          now_member_cnt: number
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          challenge_ctt: string
+          challenge_id?: string
+          challenge_ttl: string
+          created_at?: string
+          end_date: string
+          max_member_cnt: number
+          now_member_cnt?: number
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          challenge_ctt?: string
+          challenge_id?: string
+          challenge_ttl?: string
+          created_at?: string
+          end_date?: string
+          max_member_cnt?: number
+          now_member_cnt?: number
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       keywords: {
         Row: {
           created_at: string
@@ -284,6 +401,60 @@ export type Database = {
           },
         ]
       }
+      thread_media: {
+        Row: {
+          created_at: string
+          file_size: number
+          media_id: number
+          media_type: Database["public"]["Enums"]["media_type"]
+          mime_type: string
+          original_filename: string
+          profile_id: string
+          public_url: string
+          storage_path: string
+          thread_id: number
+        }
+        Insert: {
+          created_at?: string
+          file_size: number
+          media_id?: never
+          media_type: Database["public"]["Enums"]["media_type"]
+          mime_type: string
+          original_filename: string
+          profile_id: string
+          public_url: string
+          storage_path: string
+          thread_id: number
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          media_id?: never
+          media_type?: Database["public"]["Enums"]["media_type"]
+          mime_type?: string
+          original_filename?: string
+          profile_id?: string
+          public_url?: string
+          storage_path?: string
+          thread_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_media_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "thread_media_thread_id_threads_thread_id_fk"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["thread_id"]
+          },
+        ]
+      }
       thread_properties: {
         Row: {
           created_at: string
@@ -486,13 +657,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["profile_id"]
           },
-          {
-            foreignKeyName: "user_insights_thread_id_threads_thread_id_fk"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads"
-            referencedColumns: ["thread_id"]
-          },
         ]
       }
       user_metrics: {
@@ -535,6 +699,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      media_type: "image" | "video"
       notification_type: "thread" | "X" | "following" | "challenge"
       property_type: "mood" | "work"
       target_type: "thread" | "X"
@@ -666,6 +831,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      media_type: ["image", "video"],
       notification_type: ["thread", "X", "following", "challenge"],
       property_type: ["mood", "work"],
       target_type: ["thread", "X"],

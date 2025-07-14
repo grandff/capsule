@@ -6,7 +6,10 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
+  index,
+  integer,
   pgEnum,
   pgPolicy,
   pgTable,
@@ -171,3 +174,113 @@ export const setting = pgTable(
     }),
   ],
 );
+
+// 사용자 인사이트 시계열 데이터 테이블
+export const userInsights = pgTable(
+  "user_insights",
+  {
+    insight_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    thread_id: bigint({ mode: "number" }).notNull(), // threads 테이블 참조는 write/schema.ts에서 처리
+    metric_name: text().notNull(), // "views", "followers_count" 등
+    metric_type: text().notNull(), // "timeseries" 또는 "total"
+    period: text().notNull(), // "day", "week", "month"
+    value: integer().notNull(),
+    end_time: timestamp().notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own insights
+    pgPolicy("select-user-insights-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own insights
+    pgPolicy("insert-user-insights-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own insights
+    pgPolicy("update-user-insights-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own insights
+    pgPolicy("delete-user-insights-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // 인덱스들
+    index("profile_thread_idx").on(table.profile_id, table.thread_id),
+    index("metric_idx").on(table.metric_name),
+    index("end_time_idx").on(table.end_time),
+  ],
+);
+
+// 사용자 총계 지표 테이블 (메인 화면 통계용)
+export const userMetrics = pgTable(
+  "user_metrics",
+  {
+    metric_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    metric_name: text().notNull(), // "total_views", "total_reposts", "total_quotes"
+    total_value: integer().notNull(),
+    last_updated: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own metrics
+    pgPolicy("select-user-metrics-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own metrics
+    pgPolicy("insert-user-metrics-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own metrics
+    pgPolicy("update-user-metrics-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own metrics
+    pgPolicy("delete-user-metrics-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // 인덱스
+    index("profile_metric_idx").on(table.profile_id, table.metric_name),
+  ],
+);
+
+// 테이블 타입 정의
+export type UserInsight = typeof userInsights.$inferSelect;
+export type NewUserInsight = typeof userInsights.$inferInsert;
+export type UserMetric = typeof userMetrics.$inferSelect;
+export type NewUserMetric = typeof userMetrics.$inferInsert;

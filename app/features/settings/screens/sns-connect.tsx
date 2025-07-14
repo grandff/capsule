@@ -17,7 +17,7 @@ import SnsStatus from "../components/sns-status";
 import { isConnected } from "../utils/sns-connect-util";
 
 // SVG 로고 컴포넌트들
-const ThreadsLogo = () => (
+export const ThreadsLogo = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     x="0px"
@@ -30,7 +30,7 @@ const ThreadsLogo = () => (
   </svg>
 );
 
-const XLogo = () => (
+export const XLogo = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     x="0px"

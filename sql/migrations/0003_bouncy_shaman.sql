@@ -1,0 +1,5 @@
+ALTER TABLE "thread_media" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "select-thread-media-policy" ON "thread_media" AS PERMISSIVE FOR SELECT TO "authenticated" USING ((select auth.uid()) = "thread_media"."profile_id");--> statement-breakpoint
+CREATE POLICY "insert-thread-media-policy" ON "thread_media" AS PERMISSIVE FOR INSERT TO "authenticated" WITH CHECK ((select auth.uid()) = "thread_media"."profile_id");--> statement-breakpoint
+CREATE POLICY "update-thread-media-policy" ON "thread_media" AS PERMISSIVE FOR UPDATE TO "authenticated" USING ((select auth.uid()) = "thread_media"."profile_id") WITH CHECK ((select auth.uid()) = "thread_media"."profile_id");--> statement-breakpoint
+CREATE POLICY "delete-thread-media-policy" ON "thread_media" AS PERMISSIVE FOR DELETE TO "authenticated" USING ((select auth.uid()) = "thread_media"."profile_id");

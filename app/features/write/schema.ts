@@ -1,20 +1,23 @@
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
   index,
   integer,
   pgEnum,
+  pgPolicy,
   pgTable,
   primaryKey,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { authUid, authenticatedRole } from "drizzle-orm/supabase";
 import { z } from "zod";
 
 import { PROPERTY_TYPES, TARGET_TYPES } from "~/constants";
 
-import { profiles } from "../users/schema";
+import { profiles, userInsights, userMetrics } from "../users/schema";
 
 export const targetType = pgEnum(
   "target_type",
@@ -26,77 +29,119 @@ export const propertyType = pgEnum(
   PROPERTY_TYPES.map((type) => type.value) as [string, ...string[]],
 );
 
-export const threads = pgTable("threads", {
-  thread_id: bigint({ mode: "number" })
-    .primaryKey()
-    .generatedAlwaysAsIdentity(),
-  short_text: text().notNull(),
-  thread: text().notNull(),
-  target_type: targetType().notNull(),
-  send_flag: boolean().notNull().default(false),
-  result_id: text(),
-  profile_id: uuid().references(() => profiles.profile_id, {
-    onDelete: "cascade",
-  }),
-  share_cnt: integer().notNull().default(0),
-  like_cnt: integer().notNull().default(0),
-  comment_cnt: integer().notNull().default(0),
-  view_cnt: integer().notNull().default(0),
-  now_follow_cnt: integer().notNull().default(0),
-  created_at: timestamp().notNull().defaultNow(),
-  updated_at: timestamp().notNull().defaultNow(),
-});
+export const mediaType = pgEnum("media_type", ["image", "video"]);
 
-// 사용자 인사이트 시계열 데이터 테이블
-export const userInsights = pgTable(
-  "user_insights",
+export const threads = pgTable(
+  "threads",
   {
-    insight_id: bigint({ mode: "number" })
+    thread_id: bigint({ mode: "number" })
       .primaryKey()
       .generatedAlwaysAsIdentity(),
-    profile_id: uuid()
-      .notNull()
-      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    short_text: text().notNull(),
+    thread: text().notNull(),
+    target_type: targetType().notNull(),
+    send_flag: boolean().notNull().default(false),
+    result_id: text(),
+    profile_id: uuid().references(() => profiles.profile_id, {
+      onDelete: "cascade",
+    }),
+    share_cnt: integer().notNull().default(0),
+    like_cnt: integer().notNull().default(0),
+    comment_cnt: integer().notNull().default(0),
+    view_cnt: integer().notNull().default(0),
+    now_follow_cnt: integer().notNull().default(0),
+    created_at: timestamp().notNull().defaultNow(),
+    updated_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own threads
+    pgPolicy("select-threads-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own threads
+    pgPolicy("insert-threads-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own threads
+    pgPolicy("update-threads-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own threads
+    pgPolicy("delete-threads-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+  ],
+);
+
+// 미디어 파일 테이블
+export const threadMedia = pgTable(
+  "thread_media",
+  {
+    media_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
     thread_id: bigint({ mode: "number" })
       .references(() => threads.thread_id, { onDelete: "cascade" })
       .notNull(),
-    metric_name: text().notNull(), // "views", "followers_count" 등
-    metric_type: text().notNull(), // "timeseries" 또는 "total"
-    period: text().notNull(), // "day", "week", "month"
-    value: integer().notNull(),
-    end_time: timestamp().notNull(),
-    created_at: timestamp().notNull().defaultNow(),
-  },
-  (table) => ({
-    profileThreadIdx: index("profile_thread_idx").on(
-      table.profile_id,
-      table.thread_id,
-    ),
-    metricIdx: index("metric_idx").on(table.metric_name),
-    endTimeIdx: index("end_time_idx").on(table.end_time),
-  }),
-);
-
-// 사용자 총계 지표 테이블 (메인 화면 통계용)
-export const userMetrics = pgTable(
-  "user_metrics",
-  {
-    metric_id: bigint({ mode: "number" })
-      .primaryKey()
-      .generatedAlwaysAsIdentity(),
     profile_id: uuid()
       .notNull()
       .references(() => profiles.profile_id, { onDelete: "cascade" }),
-    metric_name: text().notNull(), // "total_views", "total_reposts", "total_quotes"
-    total_value: integer().notNull(),
-    last_updated: timestamp().notNull().defaultNow(),
+    media_type: mediaType().notNull(), // "image" 또는 "video"
+    original_filename: text().notNull(), // 원본 파일명
+    public_url: text().notNull(), // Supabase Storage public URL
+    file_size: bigint({ mode: "number" }).notNull(), // 파일 크기 (bytes)
+    mime_type: text().notNull(), // MIME 타입 (image/jpeg, video/mp4 등)
+    storage_path: text().notNull(), // Supabase Storage 내부 경로
+    created_at: timestamp().notNull().defaultNow(),
   },
-  (table) => ({
-    profileMetricIdx: index("profile_metric_idx").on(
-      table.profile_id,
-      table.metric_name,
-    ),
-  }),
+  (table) => [
+    // RLS Policy: Users can only view their own thread media
+    pgPolicy("select-thread-media-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own thread media
+    pgPolicy("insert-thread-media-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own thread media
+    pgPolicy("update-thread-media-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own thread media
+    pgPolicy("delete-thread-media-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // 인덱스들
+    index("thread_media_thread_idx").on(table.thread_id),
+    index("thread_media_profile_idx").on(table.profile_id),
+    index("thread_media_type_idx").on(table.media_type),
+  ],
 );
 
 // 다대다 관계 테이블들
@@ -111,9 +156,43 @@ export const threadKeywords = pgTable(
       .notNull(),
     created_at: timestamp().notNull().defaultNow(),
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.thread_id, table.keyword_id] }),
-  }),
+  (table) => [
+    // 복합 기본키
+    primaryKey({ columns: [table.thread_id, table.keyword_id] }),
+    // RLS Policy: Users can only view their own thread keywords
+    pgPolicy("select-thread-keywords-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`EXISTS (
+        SELECT 1 FROM threads 
+        WHERE threads.thread_id = ${table.thread_id} 
+        AND threads.profile_id = ${authUid}
+      )`,
+    }),
+    // RLS Policy: Users can only insert their own thread keywords
+    pgPolicy("insert-thread-keywords-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM threads 
+        WHERE threads.thread_id = ${table.thread_id} 
+        AND threads.profile_id = ${authUid}
+      )`,
+    }),
+    // RLS Policy: Users can only delete their own thread keywords
+    pgPolicy("delete-thread-keywords-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`EXISTS (
+        SELECT 1 FROM threads 
+        WHERE threads.thread_id = ${table.thread_id} 
+        AND threads.profile_id = ${authUid}
+      )`,
+    }),
+  ],
 );
 
 export const threadProperties = pgTable(
@@ -127,9 +206,43 @@ export const threadProperties = pgTable(
       .notNull(),
     created_at: timestamp().notNull().defaultNow(),
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.thread_id, table.property_id] }),
-  }),
+  (table) => [
+    // 복합 기본키
+    primaryKey({ columns: [table.thread_id, table.property_id] }),
+    // RLS Policy: Users can only view their own thread properties
+    pgPolicy("select-thread-properties-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`EXISTS (
+        SELECT 1 FROM threads 
+        WHERE threads.thread_id = ${table.thread_id} 
+        AND threads.profile_id = ${authUid}
+      )`,
+    }),
+    // RLS Policy: Users can only insert their own thread properties
+    pgPolicy("insert-thread-properties-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`EXISTS (
+        SELECT 1 FROM threads 
+        WHERE threads.thread_id = ${table.thread_id} 
+        AND threads.profile_id = ${authUid}
+      )`,
+    }),
+    // RLS Policy: Users can only delete their own thread properties
+    pgPolicy("delete-thread-properties-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`EXISTS (
+        SELECT 1 FROM threads 
+        WHERE threads.thread_id = ${table.thread_id} 
+        AND threads.profile_id = ${authUid}
+      )`,
+    }),
+  ],
 );
 
 export const keywords = pgTable(
@@ -143,9 +256,39 @@ export const keywords = pgTable(
     created_at: timestamp().notNull().defaultNow(),
     updated_at: timestamp().notNull().defaultNow(),
   },
-  (table) => ({
-    keywordIdx: index("keyword_idx").on(table.keyword),
-  }),
+  (table) => [
+    // RLS Policy: Users can only view keywords
+    pgPolicy("select-keywords-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`true`,
+    }),
+    // RLS Policy: Only admins can insert keywords
+    pgPolicy("insert-keywords-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`auth.jwt() ->> 'role' = 'admin'`,
+    }),
+    // RLS Policy: Only admins can update keywords
+    pgPolicy("update-keywords-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`auth.jwt() ->> 'role' = 'admin'`,
+      using: sql`auth.jwt() ->> 'role' = 'admin'`,
+    }),
+    // RLS Policy: Only admins can delete keywords
+    pgPolicy("delete-keywords-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`auth.jwt() ->> 'role' = 'admin'`,
+    }),
+    // 인덱스
+    index("keyword_idx").on(table.keyword),
+  ],
 );
 
 export const properties = pgTable(
@@ -160,10 +303,40 @@ export const properties = pgTable(
     created_at: timestamp().notNull().defaultNow(),
     updated_at: timestamp().notNull().defaultNow(),
   },
-  (table) => ({
-    propertyIdx: index("property_idx").on(table.property),
-    propertyTypeIdx: index("property_type_idx").on(table.property_type),
-  }),
+  (table) => [
+    // RLS Policy: Users can only view properties
+    pgPolicy("select-properties-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`true`,
+    }),
+    // RLS Policy: Only admins can insert properties
+    pgPolicy("insert-properties-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`auth.jwt() ->> 'role' = 'admin'`,
+    }),
+    // RLS Policy: Only admins can update properties
+    pgPolicy("update-properties-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`auth.jwt() ->> 'role' = 'admin'`,
+      using: sql`auth.jwt() ->> 'role' = 'admin'`,
+    }),
+    // RLS Policy: Only admins can delete properties
+    pgPolicy("delete-properties-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`auth.jwt() ->> 'role' = 'admin'`,
+    }),
+    // 인덱스들
+    index("property_idx").on(table.property),
+    index("property_type_idx").on(table.property_type),
+  ],
 );
 
 // 프롬프트 관련 스키마
@@ -271,6 +444,8 @@ export type WriteResponse = z.infer<typeof WriteResponseSchema>;
 // 테이블 타입 정의
 export type Thread = typeof threads.$inferSelect;
 export type NewThread = typeof threads.$inferInsert;
+export type ThreadMedia = typeof threadMedia.$inferSelect;
+export type NewThreadMedia = typeof threadMedia.$inferInsert;
 export type Keyword = typeof keywords.$inferSelect;
 export type NewKeyword = typeof keywords.$inferInsert;
 export type Property = typeof properties.$inferSelect;
@@ -279,7 +454,3 @@ export type ThreadKeyword = typeof threadKeywords.$inferSelect;
 export type NewThreadKeyword = typeof threadKeywords.$inferInsert;
 export type ThreadProperty = typeof threadProperties.$inferSelect;
 export type NewThreadProperty = typeof threadProperties.$inferInsert;
-export type UserInsight = typeof userInsights.$inferSelect;
-export type NewUserInsight = typeof userInsights.$inferInsert;
-export type UserMetric = typeof userMetrics.$inferSelect;
-export type NewUserMetric = typeof userMetrics.$inferInsert;
