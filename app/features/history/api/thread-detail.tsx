@@ -22,7 +22,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   try {
-    const thread = await getThreadDetail(client, user.id, parseInt(threadId));
+    const thread = await getThreadDetail(client, user.id, threadId);
 
     return new Response(JSON.stringify(thread), {
       status: 200,
