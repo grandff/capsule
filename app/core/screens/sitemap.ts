@@ -18,11 +18,11 @@ import path from "node:path";
 
 /**
  * Sitemap generator loader function
- * 
+ *
  * This React Router loader function dynamically generates an XML sitemap for the application.
  * It scans the filesystem for content files, combines them with static routes, and formats
  * them according to the sitemap protocol specification.
- * 
+ *
  * The function performs these steps:
  * 1. Gets the site domain from environment variables
  * 2. Scans the blog directory for MDX files and converts filenames to URLs
@@ -30,7 +30,7 @@ import path from "node:path";
  * 4. Combines these with static routes like homepage, login, and registration
  * 5. Formats all URLs according to the sitemap XML specification
  * 6. Returns an XML response with the proper content type header
- * 
+ *
  * @returns {Response} XML response containing the sitemap
  */
 export async function loader() {
@@ -38,11 +38,11 @@ export async function loader() {
   const DOMAIN = process.env.SITE_URL;
 
   // Scan the blog directory for MDX files and convert to URLs
-  const blogUrls = (
-    await readdir(path.join(process.cwd(), "app", "features", "blog", "docs"))
-  )
-    .filter((file) => file.endsWith(".mdx")) // Only include MDX files
-    .map((file) => `/blog/${file.replace(".mdx", "")}`);
+  // const blogUrls = (
+  //   await readdir(path.join(process.cwd(), "app", "features", "blog", "docs"))
+  // )
+  //   .filter((file) => file.endsWith(".mdx")) // Only include MDX files
+  //   .map((file) => `/blog/${file.replace(".mdx", "")}`);
 
   // Scan the legal directory for MDX files and convert to URLs
   const legalUrls = (
@@ -55,7 +55,7 @@ export async function loader() {
   const customUrls = ["/", "/login", "/join"];
 
   // Combine all URLs and format them according to sitemap protocol
-  const sitemapUrls = [...blogUrls, ...legalUrls, ...customUrls].map((url) => {
+  const sitemapUrls = [...legalUrls, ...customUrls].map((url) => {
     return `<url>
       <loc>${DOMAIN}${url}</loc>
       <lastmod>${new Date().toISOString()}</lastmod>

@@ -11,11 +11,11 @@ declare module "react-router" {
   }
 }
 
-const urls = (
-  await readdir(path.join(process.cwd(), "app", "features", "blog", "docs"))
-)
-  .filter((file) => file.endsWith(".mdx"))
-  .map((file) => `/blog/${file.replace(".mdx", "")}`);
+// const urls = (
+//   await readdir(path.join(process.cwd(), "app", "features", "blog", "docs"))
+// )
+//   .filter((file) => file.endsWith(".mdx"))
+//   .map((file) => `/blog/${file.replace(".mdx", "")}`);
 
 export default {
   ssr: true,
@@ -26,7 +26,7 @@ export default {
       "/blog",
       "/sitemap.xml",
       "/robots.txt",
-      ...urls,
+      //...urls,
     ];
   },
   presets: [
