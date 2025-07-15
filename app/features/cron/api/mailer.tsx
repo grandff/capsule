@@ -88,6 +88,13 @@ export async function action({ request }: Route.LoaderArgs) {
 
     // Process different email templates
     if (template === "welcome") {
+      // Check if Resend client is available
+      if (!resendClient) {
+        console.error("Resend client is not configured");
+        Sentry.captureException(new Error("Resend client is not configured"));
+        return data(null, { status: 500 });
+      }
+
       // Send welcome email using the Resend client
       const { error } = await resendClient.emails.send({
         // Make sure this domain is the Resend domain.

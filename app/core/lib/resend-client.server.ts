@@ -20,10 +20,10 @@ import { Resend } from "resend";
 
 /**
  * Resend email client instance
- * 
+ *
  * This client is initialized with the RESEND_API_KEY from environment variables
  * and provides methods for sending emails through the Resend API.
- * 
+ *
  * @example
  * // Example usage in a server function
  * await resendClient.emails.send({
@@ -33,6 +33,8 @@ import { Resend } from "resend";
  *   html: '<p>Thanks for signing up!</p>',
  * });
  */
-const resendClient = new Resend(process.env.RESEND_API_KEY);
+const resendClient = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export default resendClient;
