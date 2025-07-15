@@ -36,6 +36,20 @@
       "when": 1752451475886,
       "tag": "0004_nappy_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1752476177744,
+      "tag": "0005_fair_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1752536419153,
+      "tag": "0006_even_bedlam",
+      "breakpoints": true
     }
   ]
 }

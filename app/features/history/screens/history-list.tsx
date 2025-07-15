@@ -21,6 +21,10 @@ import makeServerClient from "~/core/lib/supa-client.server";
 
 import { getThreadsList } from "../queries";
 
+export const meta: Route.MetaFunction = () => {
+  return [{ title: `History | ${import.meta.env.VITE_APP_NAME}` }];
+};
+
 const searchParamsSchema = z.object({
   upload: z.string().optional(),
   platform: z.string().optional(),

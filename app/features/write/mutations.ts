@@ -272,3 +272,22 @@ export async function markThreadAsDeleted(
     throw error;
   }
 }
+
+// 팔로워 수 업데이트
+export async function updateThreadFollowersCount(
+  client: SupabaseClient<Database>,
+  threadId: number,
+  followersCount: number,
+) {
+  const { error } = await client
+    .from("threads")
+    .update({ now_follow_cnt: followersCount })
+    .eq("thread_id", threadId);
+
+  if (error) {
+    console.error("Error updating thread followers count:", error);
+    throw error;
+  }
+
+  console.log(`Thread ${threadId}의 팔로워 수 업데이트: ${followersCount}`);
+}

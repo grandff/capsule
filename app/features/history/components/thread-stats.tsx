@@ -24,12 +24,21 @@ import {
 
 interface ThreadStatsProps {
   thread: any;
+  followerChange?: {
+    currentFollowers: number;
+    baselineFollowers: number;
+    followerChange: number;
+    isPositive: boolean;
+    isNegative: boolean;
+    isNeutral: boolean;
+  } | null;
   onUpdateInsights: () => Promise<void>;
   isUpdating: boolean;
 }
 
 export function ThreadStats({
   thread,
+  followerChange,
   onUpdateInsights,
   isUpdating,
 }: ThreadStatsProps) {
@@ -104,10 +113,19 @@ export function ThreadStats({
           <div className="rounded-lg bg-emerald-50 p-4 text-center dark:bg-emerald-900/20">
             <Users className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              +{thread.now_follow_cnt}
+              {followerChange ? (
+                <span
+                  className={`${followerChange.isPositive ? "text-green-600 dark:text-green-400" : followerChange.isNegative ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"}`}
+                >
+                  {followerChange.isPositive ? "+" : ""}
+                  {followerChange.followerChange.toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-gray-600 dark:text-gray-400">-</span>
+              )}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              팔로워 증가
+              팔로워 증감
             </div>
           </div>
         </div>

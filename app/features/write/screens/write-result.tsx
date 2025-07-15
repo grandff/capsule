@@ -216,6 +216,7 @@ export default function WriteResult() {
     if (!result) return;
 
     if (platform === "threads") {
+      // 먼저 DB에 저장하고 목록으로 이동
       await handleThreadsUpload(
         result,
         displayContent,
@@ -226,6 +227,7 @@ export default function WriteResult() {
       return;
     }
 
+    // 다른 플랫폼은 기존과 동일하게 처리
     setTimeout(() => {
       setIsUploading(false);
       navigate(`/dashboard/history?upload=success&platform=${platform}`);

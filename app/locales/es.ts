@@ -10,6 +10,9 @@ const es: Translation = {
     kr: "Coreano",
     es: "Español",
   },
+  word: {
+    start: "Empezar",
+  },
 };
 
 export default es;

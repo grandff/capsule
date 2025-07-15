@@ -33,8 +33,7 @@ interface UserInsightsResponse {
 
 interface ApiResponse {
   success: boolean;
-  timeseries?: UserInsightsResponse;
-  total?: UserInsightsResponse;
+  data?: UserInsightsResponse;
   error?: string;
 }
 
@@ -63,53 +62,30 @@ export async function fetchUserInsights(
   const threadUserId = snsProfile.user_id;
 
   try {
-    // 시계열 지표 (views)
-    const timeseriesParams = new URLSearchParams({
-      metric: "views",
-      period: "day",
+    // 모든 지표를 한 번에 가져오기
+    const params = new URLSearchParams({
+      metric: "views,likes,replies,reposts,quotes,followers_count",
       access_token: accessToken,
     });
 
-    const timeseriesResponse = await fetch(
-      `${THREAD_END_POINT_URL}/${threadUserId}/threads_insights?${timeseriesParams.toString()}`,
+    const response = await fetch(
+      `${THREAD_END_POINT_URL}/${threadUserId}/threads_insights?${params.toString()}`,
       {
         method: "GET",
       },
     );
 
-    if (!timeseriesResponse.ok) {
-      throw new Error(`Timeseries API failed: ${timeseriesResponse.status}`);
+    if (!response.ok) {
+      throw new Error(`Insights API failed: ${response.status}`);
     }
 
-    const timeseriesData =
-      (await timeseriesResponse.json()) as UserInsightsResponse;
+    const insightsData = (await response.json()) as UserInsightsResponse;
 
-    // 총계 지표 (views, reposts, quotes, followers_count)
-    const totalParams = new URLSearchParams({
-      metric: "views,reposts,quotes,followers_count",
-      access_token: accessToken,
-    });
-
-    const totalResponse = await fetch(
-      `${THREAD_END_POINT_URL}/${threadUserId}/threads_insights?${totalParams.toString()}`,
-      {
-        method: "GET",
-      },
-    );
-
-    if (!totalResponse.ok) {
-      throw new Error(`Total API failed: ${totalResponse.status}`);
-    }
-
-    const totalData = (await totalResponse.json()) as UserInsightsResponse;
-
-    console.log("Timeseries Insights:", timeseriesData);
-    console.log("Total Insights:", totalData);
+    console.log("User Insights:", insightsData);
 
     return {
       success: true,
-      timeseries: timeseriesData,
-      total: totalData,
+      data: insightsData,
     };
   } catch (error) {
     console.error("Error fetching user insights:", error);

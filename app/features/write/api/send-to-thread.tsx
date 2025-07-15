@@ -2,11 +2,18 @@ import { type ActionFunctionArgs, data } from "react-router";
 
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getThreadsAccessToken } from "~/features/settings/queries";
-
-import { saveThread, updateThreadResultId } from "../mutations";
 import {
-  processMultipleImages,
-  processMultipleVideos,
+  getFollowersCount,
+  saveUserInsights,
+} from "~/features/users/mutations";
+
+import {
+  saveThread,
+  updateThreadFollowersCount,
+  updateThreadResultId,
+} from "../mutations";
+import {
+  processMultipleMedia,
   processSingleMedia,
 } from "../utils/media-processor";
 
@@ -97,17 +104,15 @@ export async function action({ request }: ActionFunctionArgs) {
     return data({ error: "Access token not found" }, { status: 401 });
   }
 
-  // 파일 개수에 따른 분기 처리
-  const hasSingleImage = imageUrl && !imageUrls;
-  const hasSingleVideo = videoUrl && !videoUrls;
-  const hasMultipleImages = imageUrls && imageUrls.split(",").length > 0;
-  const hasMultipleVideos = videoUrls && videoUrls.split(",").length > 0;
+  // 미디어 개수에 따른 분기 처리
+  const hasMultipleImages = imageUrls && imageUrls.split(",").length > 1;
+  const hasMultipleVideos = videoUrls && videoUrls.split(",").length > 1;
+  const hasMultipleMedia = hasMultipleImages || hasMultipleVideos;
 
-  console.log("=== 파일 처리 분기 ===");
-  console.log("단일 이미지:", hasSingleImage);
-  console.log("단일 비디오:", hasSingleVideo);
+  console.log("=== 미디어 처리 분기 ===");
   console.log("다중 이미지:", hasMultipleImages);
   console.log("다중 비디오:", hasMultipleVideos);
+  console.log("다중 미디어:", hasMultipleMedia);
 
   // 미디어 처리 분기 (백그라운드에서만 실행)
   let processingResult: { containerId: string; threadId: string };
@@ -177,149 +182,129 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  // Threads API 호출 (백그라운드에서 실행)
-  try {
-    // 미디어 처리 분기
-    if (hasMultipleImages) {
-      // 다중 이미지 처리
-      console.log("=== 다중 이미지 처리 시작 ===");
-      processingResult = await processMultipleImages(
-        snsId,
-        text,
-        accessToken,
-        imageUrls!,
-      );
-    } else if (hasMultipleVideos) {
-      // 다중 비디오 처리
-      console.log("=== 다중 비디오 처리 시작 ===");
-      processingResult = await processMultipleVideos(
-        snsId,
-        text,
-        accessToken,
-        videoUrls!,
-      );
-    } else {
-      // 단일 미디어 또는 텍스트만 있는 경우
-      console.log("=== 단일 미디어 또는 텍스트 처리 ===");
-      processingResult = await processSingleMedia(
-        snsId,
-        text,
-        accessToken,
-        imageUrl,
-        videoUrl,
-        imageUrls,
-        videoUrls,
-      );
-    }
+  // DB 저장 완료 후 즉시 성공 응답 반환
+  console.log("=== DB 저장 완료, 즉시 응답 반환 ===");
 
-    const { threadId: bgThreadId } = processingResult;
-
-    console.log("Threads API 호출 성공, threadId:", bgThreadId);
-
-    // 성공 시 로컬 DB 업데이트
-    await updateThreadResultId(client, localThreadId, bgThreadId);
-
-    // send_flag도 true로 업데이트
-    const { error: updateError } = await client
-      .from("threads")
-      .update({ send_flag: true })
-      .eq("thread_id", localThreadId);
-
-    if (updateError) {
-      console.error("Error updating send_flag:", updateError);
-    }
-
-    console.log("로컬 DB 업데이트 완료");
-
-    // 사용자 인사이트 저장 (백그라운드에서 실행)
+  // Threads API 호출을 백그라운드에서 비동기로 실행
+  (async () => {
     try {
-      console.log("=== 사용자 인사이트 저장 시작 ===");
+      console.log("=== 백그라운드 Threads API 호출 시작 ===");
 
-      // 인사이트 데이터 직접 가져오기
-      const { fetchUserInsights } = await import(
-        "~/features/users/utils/insights-utils"
-      );
-      const insightsData = await fetchUserInsights(client, user.id);
-
-      if (insightsData.success) {
-        // 시계열 데이터 저장
-        if (insightsData.timeseries?.data) {
-          for (const insight of insightsData.timeseries.data) {
-            if (insight.values) {
-              for (const value of insight.values) {
-                await client.from("user_insights").insert({
-                  profile_id: user.id,
-                  thread_id: localThreadId,
-                  metric_name: insight.name,
-                  metric_type: "timeseries",
-                  period: insight.period,
-                  value: value.value,
-                  end_time: new Date(value.end_time).toISOString(),
-                });
-              }
-            }
-          }
+      // 미디어 처리 분기
+      if (hasMultipleMedia) {
+        // 다중 미디어 처리
+        console.log("=== 다중 미디어 처리 시작 ===");
+        if (hasMultipleImages) {
+          processingResult = await processMultipleMedia(
+            snsId,
+            text,
+            accessToken,
+            imageUrls!,
+            "image",
+          );
+        } else {
+          processingResult = await processMultipleMedia(
+            snsId,
+            text,
+            accessToken,
+            videoUrls!,
+            "video",
+          );
         }
-
-        // 총계 데이터 저장/업데이트
-        if (insightsData.total?.data) {
-          for (const metric of insightsData.total.data) {
-            if (metric.total_value) {
-              await client.from("user_metrics").upsert(
-                {
-                  profile_id: user.id,
-                  metric_name: `total_${metric.name}`,
-                  total_value: metric.total_value.value,
-                  last_updated: new Date().toISOString(),
-                },
-                {
-                  onConflict: "profile_id,metric_name",
-                },
-              );
-            }
-          }
-        }
-
-        console.log("사용자 인사이트 저장 완료");
+      } else {
+        // 단일 미디어 또는 텍스트만 있는 경우
+        console.log("=== 단일 미디어 또는 텍스트 처리 ===");
+        processingResult = await processSingleMedia(
+          snsId,
+          text,
+          accessToken,
+          imageUrl,
+          videoUrl,
+          imageUrls,
+          videoUrls,
+        );
       }
-    } catch (insightsError) {
-      console.error("사용자 인사이트 저장 실패:", insightsError);
-      // 인사이트 저장 실패는 전체 프로세스를 실패시키지 않음
+
+      const { threadId: bgThreadId } = processingResult;
+
+      console.log("Threads API 호출 성공, threadId:", bgThreadId);
+
+      // 성공 시 로컬 DB 업데이트
+      await updateThreadResultId(client, localThreadId, bgThreadId);
+
+      // send_flag도 true로 업데이트
+      const { error: updateError } = await client
+        .from("threads")
+        .update({ send_flag: true })
+        .eq("thread_id", localThreadId);
+
+      if (updateError) {
+        console.error("Error updating send_flag:", updateError);
+      }
+
+      console.log("백그라운드 로컬 DB 업데이트 완료");
+
+      // 사용자 인사이트 저장 (백그라운드에서 실행)
+      try {
+        console.log("=== 백그라운드 사용자 인사이트 저장 시작 ===");
+
+        // 인사이트 데이터 직접 가져오기
+        const { fetchUserInsights } = await import(
+          "~/features/users/utils/insights-utils"
+        );
+        const insightsData = await fetchUserInsights(client, user.id);
+
+        if (insightsData.success && insightsData.data) {
+          // 모든 인사이트 데이터 저장 (시계열 + 총계)
+          await saveUserInsights(
+            client,
+            user.id,
+            localThreadId,
+            insightsData.data.data,
+          );
+
+          // 팔로워 수 업데이트
+          const followersCount = await getFollowersCount(
+            insightsData.data.data,
+          );
+          await updateThreadFollowersCount(
+            client,
+            localThreadId,
+            followersCount,
+          );
+
+          console.log("백그라운드 사용자 인사이트 저장 완료");
+        }
+      } catch (insightsError) {
+        console.error("백그라운드 사용자 인사이트 저장 실패:", insightsError);
+        // 인사이트 저장 실패는 전체 프로세스를 실패시키지 않음
+      }
+    } catch (error) {
+      console.error("백그라운드 Threads API 호출 실패:", error);
+
+      // 실패 시에도 로컬 DB는 유지하되 에러 상태로 표시
+      const { error: updateError } = await client
+        .from("threads")
+        .update({
+          send_flag: false,
+          result_id: "ERROR",
+        })
+        .eq("thread_id", localThreadId);
+
+      if (updateError) {
+        console.error("Error updating error status:", updateError);
+      }
     }
+  })();
 
-    return data(
-      {
-        success: true,
-        localThreadId,
-        threadId: bgThreadId,
-        message: "Threads에 성공적으로 업로드되었습니다.",
-      },
-      { status: 200 },
-    );
-  } catch (error) {
-    console.error("Threads API 호출 실패:", error);
-
-    // 실패 시에도 로컬 DB는 유지하되 에러 상태로 표시
-    const { error: updateError } = await client
-      .from("threads")
-      .update({
-        send_flag: false,
-        result_id: "ERROR",
-      })
-      .eq("thread_id", localThreadId);
-
-    if (updateError) {
-      console.error("Error updating error status:", updateError);
-    }
-
-    return data(
-      {
-        success: false,
-        localThreadId,
-        error: "Threads 업로드에 실패했습니다. 나중에 다시 시도해주세요.",
-        message: "로컬에 저장되었지만 Threads 업로드에 실패했습니다.",
-      },
-      { status: 500 },
-    );
-  }
+  // 즉시 성공 응답 반환 (사용자는 목록으로 이동)
+  return data(
+    {
+      success: true,
+      localThreadId,
+      message:
+        "홍보글이 저장되었습니다. Threads 업로드가 백그라운드에서 진행 중입니다.",
+    },
+    { status: 200 },
+  );
 }

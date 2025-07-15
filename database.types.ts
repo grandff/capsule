@@ -659,6 +659,44 @@ export type Database = {
           },
         ]
       }
+      user_interest_keywords: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          keyword: string
+          keyword_id: number
+          profile_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          keyword: string
+          keyword_id?: never
+          profile_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          keyword?: string
+          keyword_id?: never
+          profile_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_interest_keywords_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       user_metrics: {
         Row: {
           last_updated: string

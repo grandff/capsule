@@ -74,7 +74,6 @@ export default [
       route("/create-gpt-idea", "features/chatgpt/api/create-gpt-idea.tsx"),
     ]),
     ...prefix("/cron", [route("/mailer", "features/cron/api/mailer.tsx")]),
-    ...prefix("/blog", [route("/og", "features/blog/api/og.tsx")]),
   ]),
 
   layout("core/layouts/navigation.layout.tsx", [

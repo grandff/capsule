@@ -12,7 +12,7 @@
  * - Payment agreement handling
  * - Secure payment processing with metadata
  */
-import type { Route } from "./+types/checkout";
+import type { Route } from "./+types/payments";
 
 import {
   type TossPaymentsWidgets,
@@ -125,7 +125,7 @@ export default function Checkout({ loaderData }: Route.ComponentProps) {
 
       // Initialize widgets with user ID as customer key for tracking
       widgets.current = await toss.widgets({
-        customerKey: loaderData.userId,
+        customerKey: loaderData.payments[0].order_id,
       });
 
       // Set the payment amount and currency
@@ -191,8 +191,8 @@ export default function Checkout({ loaderData }: Route.ComponentProps) {
         orderName: `Supabase Beagle NFT`,
 
         // Customer information from authenticated user
-        customerEmail: loaderData.userEmail,
-        customerName: loaderData.userName,
+        customerEmail: loaderData.payments[0].user_id, // FIXME
+        customerName: loaderData.payments[0].user_id, // FIXME
 
         // Additional metadata about the order
         // 🚨⚠️ This would typically contain product IDs or other order details

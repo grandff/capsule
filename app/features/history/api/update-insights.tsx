@@ -10,6 +10,7 @@ import { data } from "react-router";
 import { CACHE_TTL, cacheKeys, memoryCache } from "~/core/lib/cache";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getThreadsAccessToken } from "~/features/settings/queries";
+import { saveUserInsights } from "~/features/users/mutations";
 
 const THREAD_END_POINT_URL = "https://graph.threads.net/v1.0";
 
@@ -162,29 +163,84 @@ export async function action({ request }: ActionFunctionArgs) {
     const insightsData: ThreadsInsightsResponse = await response.json();
     console.log("Threads Insights API response:", insightsData);
 
-    // 4. insight 데이터 파싱 및 업데이트
+    // 4. insight 데이터 파싱
     const parsedInsights: ParsedInsights = parseInsightsData(insightsData);
 
-    const updateData = {
-      like_cnt: parsedInsights.likes,
-      comment_cnt: parsedInsights.replies,
-      view_cnt: parsedInsights.views,
-      share_cnt: parsedInsights.total_shares,
-      updated_at: new Date().toISOString(),
-    };
+    // 5. user_insights 테이블에만 저장 (threads 테이블은 업데이트하지 않음)
+    try {
+      // 시계열 데이터 구성
+      const timeseriesData = [
+        {
+          name: "likes",
+          period: "day",
+          values: [
+            { value: parsedInsights.likes, end_time: new Date().toISOString() },
+          ],
+        },
+        {
+          name: "replies",
+          period: "day",
+          values: [
+            {
+              value: parsedInsights.replies,
+              end_time: new Date().toISOString(),
+            },
+          ],
+        },
+        {
+          name: "views",
+          period: "day",
+          values: [
+            { value: parsedInsights.views, end_time: new Date().toISOString() },
+          ],
+        },
+        {
+          name: "reposts",
+          period: "day",
+          values: [
+            {
+              value: parsedInsights.reposts,
+              end_time: new Date().toISOString(),
+            },
+          ],
+        },
+        {
+          name: "quotes",
+          period: "day",
+          values: [
+            {
+              value: parsedInsights.quotes,
+              end_time: new Date().toISOString(),
+            },
+          ],
+        },
+        {
+          name: "shares",
+          period: "day",
+          values: [
+            {
+              value: parsedInsights.shares,
+              end_time: new Date().toISOString(),
+            },
+          ],
+        },
+      ];
 
-    // 5. 데이터베이스 업데이트
-    const { error: updateError } = await client
-      .from("threads")
-      .update(updateData)
-      .eq("thread_id", parseInt(threadId, 10));
+      // user_insights에 저장
+      await saveUserInsights(
+        client,
+        userId,
+        parseInt(threadId, 10),
+        timeseriesData,
+      );
 
-    if (updateError) {
-      console.error("Error updating thread insights:", updateError);
+      console.log("User insights saved successfully");
+    } catch (insightsError) {
+      console.error("Error saving user insights:", insightsError);
       return data(
         {
-          error: "Failed to update database",
-          details: updateError,
+          error: "Failed to save user insights",
+          details: insightsError,
         },
         { status: 500 },
       );
@@ -197,7 +253,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return data(
       {
         success: true,
-        insights: updateData,
+        insights: parsedInsights,
         threadStatus: "active",
       },
       { status: 200 },

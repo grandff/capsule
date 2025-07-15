@@ -11,30 +11,34 @@ export interface MediaProcessingResult {
   threadId: string;
 }
 
-// 다중 이미지 처리
-export const processMultipleImages = async (
+// 다중 미디어 처리 (이미지 또는 동영상 2개 이상)
+export const processMultipleMedia = async (
   snsId: string,
   text: string,
   accessToken: string,
-  imageUrls: string,
+  mediaUrls: string,
+  mediaType: "image" | "video",
 ): Promise<MediaProcessingResult> => {
-  const imageUrlArray = imageUrls.split(",");
-  console.log(`다중 이미지 처리: ${imageUrlArray.length}개`);
+  const mediaUrlArray = mediaUrls.split(",");
+  console.log(`다중 ${mediaType} 처리: ${mediaUrlArray.length}개`);
 
-  // 각 이미지별로 개별 컨테이너 생성
+  // 각 미디어별로 개별 컨테이너 생성
   const containerIds: string[] = [];
-  for (let i = 0; i < imageUrlArray.length; i++) {
-    const imageUrl = imageUrlArray[i].trim();
+  for (let i = 0; i < mediaUrlArray.length; i++) {
+    const mediaUrl = mediaUrlArray[i].trim();
     const isCarouselItem = i > 0; // 첫 번째가 아닌 경우 carousel item
 
-    console.log(`이미지 ${i + 1}/${imageUrlArray.length} 처리:`, imageUrl);
+    console.log(
+      `${mediaType} ${i + 1}/${mediaUrlArray.length} 처리:`,
+      mediaUrl,
+    );
 
     const { id: singleContainerId } = await threadsSingleMedia(
       snsId,
       text,
       accessToken,
-      imageUrl,
-      "image",
+      mediaUrl,
+      mediaType,
       isCarouselItem,
     );
 
@@ -45,54 +49,7 @@ export const processMultipleImages = async (
   console.log("Carousel 컨테이너 생성 시작");
   const { id: carouselContainerId } = await threadsCarousel(
     snsId,
-    accessToken,
-    containerIds,
-  );
-
-  // Carousel 게시
-  const { id: threadId } = await threadsPublish(
-    snsId,
-    carouselContainerId,
-    accessToken,
-  );
-
-  return { containerId: carouselContainerId, threadId };
-};
-
-// 다중 비디오 처리
-export const processMultipleVideos = async (
-  snsId: string,
-  text: string,
-  accessToken: string,
-  videoUrls: string,
-): Promise<MediaProcessingResult> => {
-  const videoUrlArray = videoUrls.split(",");
-  console.log(`다중 비디오 처리: ${videoUrlArray.length}개`);
-
-  // 각 비디오별로 개별 컨테이너 생성
-  const containerIds: string[] = [];
-  for (let i = 0; i < videoUrlArray.length; i++) {
-    const videoUrl = videoUrlArray[i].trim();
-    const isCarouselItem = i > 0; // 첫 번째가 아닌 경우 carousel item
-
-    console.log(`비디오 ${i + 1}/${videoUrlArray.length} 처리:`, videoUrl);
-
-    const { id: singleContainerId } = await threadsSingleMedia(
-      snsId,
-      text,
-      accessToken,
-      videoUrl,
-      "video",
-      isCarouselItem,
-    );
-
-    containerIds.push(singleContainerId);
-  }
-
-  // Carousel 컨테이너 생성
-  console.log("Carousel 컨테이너 생성 시작");
-  const { id: carouselContainerId } = await threadsCarousel(
-    snsId,
+    text,
     accessToken,
     containerIds,
   );

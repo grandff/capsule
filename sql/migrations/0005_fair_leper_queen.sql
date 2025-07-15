@@ -1,0 +1,2 @@
+ALTER POLICY "insert-keywords-policy" ON "keywords" TO authenticated WITH CHECK (true);--> statement-breakpoint
+ALTER POLICY "insert-properties-policy" ON "properties" TO authenticated WITH CHECK (true);

@@ -23,7 +23,6 @@ export async function action({ request }: ActionFunctionArgs) {
       settings: {
         moods: body.settings.moods || [],
         industries: body.settings.industries || [],
-        tones: body.settings.tones || [],
         keywords: body.settings.keywords || [],
         intents: body.settings.intents || [],
         length: body.settings.length,
@@ -64,13 +63,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (promptRequest.settings.industries.length === 0) {
       return new Response(JSON.stringify({ error: "산업군을 선택해주세요." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    if (promptRequest.settings.tones.length === 0) {
-      return new Response(JSON.stringify({ error: "톤을 선택해주세요." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });

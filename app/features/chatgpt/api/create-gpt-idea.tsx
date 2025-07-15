@@ -3,7 +3,8 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { type ActionFunctionArgs, data } from "react-router";
 import { z } from "zod";
 
-const openai = new OpenAI();
+import { gptCompletion } from "~/utils/gpt-util";
+
 const IdeaSchema = z.object({
   prompt: z.string(),
   text: z.string({
@@ -41,8 +42,7 @@ const IdeaSchema = z.object({
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  console.log("formData");
-  console.log(formData);
+
   const {
     success,
     error,
@@ -56,10 +56,8 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const { prompt } = parsedData;
-  console.log(`prompt : ${prompt}`);
 
   const fullPrompt = replaceFullPrompt(prompt, parsedData);
-  console.log(`fullPrompt : ${fullPrompt}`);
 
   const completion = await gptCompletion(fullPrompt);
   if (!completion) {
@@ -68,27 +66,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
   return data({ completion }, { status: 200 });
 }
-
-// TODO 오류처리 해야함
-const gptCompletion = async (prompt: string) => {
-  try {
-    const completion = await openai.chat.completions.parse({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
-
-    // return result
-    return completion.choices[0].message.content;
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-};
 
 const replaceFullPrompt = (
   prompt: string,

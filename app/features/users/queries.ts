@@ -188,3 +188,13 @@ export async function getDashboardStats(
     dailyStats,
   };
 }
+
+export async function getUserList(client: SupabaseClient<Database>) {
+  const { data, error } = await client.from("profiles").select("profile_id");
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

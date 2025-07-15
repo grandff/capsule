@@ -279,8 +279,63 @@ export const userMetrics = pgTable(
   ],
 );
 
+// 사용자 관심 키워드 테이블
+export const userInterestKeywords = pgTable(
+  "user_interest_keywords",
+  {
+    keyword_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    keyword: text().notNull(), // 관심 키워드
+    sort_order: integer().notNull().default(0), // 정렬 순서
+    is_active: boolean().notNull().default(true), // 활성화 여부
+    created_at: timestamp().notNull().defaultNow(),
+    updated_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own interest keywords
+    pgPolicy("select-user-interest-keywords-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own interest keywords
+    pgPolicy("insert-user-interest-keywords-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own interest keywords
+    pgPolicy("update-user-interest-keywords-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own interest keywords
+    pgPolicy("delete-user-interest-keywords-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // 인덱스들
+    index("profile_keyword_idx").on(table.profile_id, table.keyword),
+    index("profile_active_idx").on(table.profile_id, table.is_active),
+    index("sort_order_idx").on(table.sort_order),
+  ],
+);
+
 // 테이블 타입 정의
 export type UserInsight = typeof userInsights.$inferSelect;
 export type NewUserInsight = typeof userInsights.$inferInsert;
 export type UserMetric = typeof userMetrics.$inferSelect;
 export type NewUserMetric = typeof userMetrics.$inferInsert;
+export type UserInterestKeyword = typeof userInterestKeywords.$inferSelect;
+export type NewUserInterestKeyword = typeof userInterestKeywords.$inferInsert;

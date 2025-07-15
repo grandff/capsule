@@ -43,23 +43,10 @@ const data = {
       title: "트렌드",
       url: "#",
       icon: TrendingUp,
-      disabled: true,
-      comingSoon: true,
       items: [
         {
           title: "트렌드 분석",
-          url: "#",
-          disabled: true,
-        },
-        {
-          title: "나와 비슷한 사람들",
-          url: "#",
-          disabled: true,
-        },
-        {
-          title: "인기 토픽",
-          url: "#",
-          disabled: true,
+          url: "/dashboard/trend",
         },
       ],
     },

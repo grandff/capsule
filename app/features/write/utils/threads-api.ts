@@ -43,16 +43,19 @@ export const threadsSingleMedia = async (
 // Carousel 컨테이너 생성 (다중 미디어용)
 export const threadsCarousel = async (
   userId: string,
+  text: string,
   accessToken: string,
   childrenIds: string[],
 ) => {
   const formData = new FormData();
 
   formData.append("media_type", "CAROUSEL");
+  formData.append("text", text);
   formData.append("children", childrenIds.join(","));
   formData.append("access_token", accessToken);
 
   console.log("Carousel 컨테이너 생성:", childrenIds);
+  console.log("Carousel 텍스트:", text);
 
   const response = await fetch(`${THREAD_END_POINT_URL}/${userId}/threads`, {
     method: "POST",

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { AdvancedSettingsSection } from "../components/advanced-settings-section";
+import { AIRecommendationSection } from "../components/ai-recommendation-section";
 import { ProgressSection } from "../components/progress-section";
 import { StyleSelectionSection } from "../components/style-selection-section";
 import { TextInputSection } from "../components/text-input-section";
@@ -37,6 +38,8 @@ export default function WriteToday() {
   const [moodButtonText, setMoodButtonText] = useState("홍보글 설정하기");
   const [showTokenAlert, setShowTokenAlert] = useState(false);
   const [tokenAlertMessage, setTokenAlertMessage] = useState("");
+  const [aiRecommendation, setAiRecommendation] = useState<string>("");
+  const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
 
   const navigate = useNavigate();
 
@@ -91,6 +94,11 @@ export default function WriteToday() {
   // 목적 선택 핸들러
   const handleIntentSelect = (intent: string) => {
     setSelectedIntents([intent]);
+  };
+
+  // AI 추천 내용 사용 핸들러
+  const handleUseRecommendation = (recommendationText: string) => {
+    setText(recommendationText);
   };
 
   // 홍보글 만들기 버튼 활성화 조건
@@ -175,6 +183,13 @@ export default function WriteToday() {
           </p>
         </div>
       </div>
+
+      {/* AI 추천 영역 */}
+      {/* <AIRecommendationSection
+        recommendation={aiRecommendation}
+        isLoading={isLoadingRecommendation}
+        onUseRecommendation={handleUseRecommendation}
+      /> */}
 
       {/* 텍스트 입력 영역 */}
       <TextInputSection

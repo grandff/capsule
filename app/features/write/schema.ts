@@ -264,12 +264,12 @@ export const keywords = pgTable(
       as: "permissive",
       using: sql`true`,
     }),
-    // RLS Policy: Only admins can insert keywords
+    // RLS Policy: All authenticated users can insert keywords
     pgPolicy("insert-keywords-policy", {
       for: "insert",
       to: authenticatedRole,
       as: "permissive",
-      withCheck: sql`auth.jwt() ->> 'role' = 'admin'`,
+      withCheck: sql`true`,
     }),
     // RLS Policy: Only admins can update keywords
     pgPolicy("update-keywords-policy", {
@@ -311,12 +311,12 @@ export const properties = pgTable(
       as: "permissive",
       using: sql`true`,
     }),
-    // RLS Policy: Only admins can insert properties
+    // RLS Policy: All authenticated users can insert properties
     pgPolicy("insert-properties-policy", {
       for: "insert",
       to: authenticatedRole,
       as: "permissive",
-      withCheck: sql`auth.jwt() ->> 'role' = 'admin'`,
+      withCheck: sql`true`,
     }),
     // RLS Policy: Only admins can update properties
     pgPolicy("update-properties-policy", {

@@ -1,18 +1,24 @@
+import type { LoaderFunctionArgs } from "react-router";
+
+import { createClient } from "@supabase/supabase-js";
 import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   Building,
-  Calendar,
   FileText,
   Hash,
   Lightbulb,
+  Plus,
   Search,
   Target,
   TrendingDown,
   TrendingUp,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useFetcher } from "react-router";
+import { ToastContainer, toast } from "react-toastify";
 
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
@@ -22,30 +28,143 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/core/components/ui/select";
+import { Input } from "~/core/components/ui/input";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "~/core/components/ui/tabs";
+import makeServerClient from "~/core/lib/supa-client.server";
 
-export default function TrendList() {
-  const [selectedPeriod, setSelectedPeriod] = useState("today");
+import { saveInterestKeywords } from "../mutations";
+import { getUserInterestKeywords } from "../queries";
 
-  // 기간 옵션
-  const periodOptions = [
-    { value: "today", label: "오늘" },
-    { value: "week", label: "이번 주" },
-    { value: "month", label: "이번 달" },
-    { value: "custom", label: "직접 선택" },
-  ];
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const [client, headers] = makeServerClient(request);
+
+    // 현재 사용자 확인
+    const {
+      data: { user },
+      error: authError,
+    } = await client.auth.getUser();
+
+    if (authError || !user) {
+      return { interestKeywords: [] };
+    }
+
+    // 사용자 프로필 ID 가져오기
+    const { data: profile } = await client
+      .from("profiles")
+      .select("profile_id")
+      .eq("profile_id", user.id)
+      .single();
+
+    if (!profile) {
+      return { interestKeywords: [] };
+    }
+
+    // 사용자 관심 키워드 조회
+    const keywords = await getUserInterestKeywords(client, profile.profile_id);
+
+    return {
+      interestKeywords: keywords.map((k) => k.keyword),
+      headers,
+    };
+  } catch (error) {
+    console.error("Error in trend-list loader:", error);
+    return { interestKeywords: [] };
+  }
+}
+
+export async function action({ request }: LoaderFunctionArgs) {
+  if (request.method !== "POST") {
+    return { success: false, message: "Method not allowed" };
+  }
+
+  try {
+    const [client, headers] = makeServerClient(request);
+
+    // 현재 사용자 확인
+    const {
+      data: { user },
+      error: authError,
+    } = await client.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, message: "인증이 필요합니다." };
+    }
+
+    // 사용자 프로필 ID 가져오기
+    const { data: profile } = await client
+      .from("profiles")
+      .select("profile_id")
+      .eq("profile_id", user.id)
+      .single();
+
+    if (!profile) {
+      return { success: false, message: "사용자 프로필을 찾을 수 없습니다." };
+    }
+
+    // FormData 파싱
+    const formData = await request.formData();
+    const keywordsString = formData.get("keywords") as string;
+
+    if (!keywordsString) {
+      return { success: false, message: "키워드 데이터가 없습니다." };
+    }
+
+    let keywords: string[];
+    try {
+      keywords = JSON.parse(keywordsString);
+    } catch (error) {
+      return { success: false, message: "유효하지 않은 키워드 데이터입니다." };
+    }
+
+    if (!Array.isArray(keywords)) {
+      return { success: false, message: "유효하지 않은 키워드 데이터입니다." };
+    }
+
+    // 키워드 저장
+    const result = await saveInterestKeywords(
+      client,
+      profile.profile_id,
+      keywords,
+    );
+
+    return result;
+  } catch (error) {
+    console.error("Error in trend-list action:", error);
+    return {
+      success: false,
+      message: "키워드 저장 중 오류가 발생했습니다.",
+      errors: [error instanceof Error ? error.message : "Unknown error"],
+    };
+  }
+}
+
+export default function TrendList({
+  loaderData,
+}: {
+  loaderData: Awaited<ReturnType<typeof loader>>;
+}) {
+  const [interestKeywords, setInterestKeywords] = useState<string[]>(
+    loaderData.interestKeywords || [],
+  );
+  const [newKeyword, setNewKeyword] = useState("");
+  const fetcher = useFetcher();
+
+  // fetcher 상태에 따른 toast 표시
+  useEffect(() => {
+    if (fetcher.data) {
+      if (fetcher.data.success) {
+        toast.success(fetcher.data.message);
+      } else {
+        toast.error(fetcher.data.message || "키워드 저장에 실패했습니다.");
+      }
+    }
+  }, [fetcher.data]);
 
   // 인기 키워드 데이터
   const trendingKeywords = [
@@ -173,242 +292,153 @@ export default function TrendList() {
     return mentions.toString();
   };
 
+  const addKeyword = () => {
+    if (newKeyword.trim() && !interestKeywords.includes(newKeyword.trim())) {
+      setInterestKeywords([...interestKeywords, newKeyword.trim()]);
+      setNewKeyword("");
+    }
+  };
+
+  const removeKeyword = (keyword: string) => {
+    setInterestKeywords(interestKeywords.filter((k) => k !== keyword));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      addKeyword();
+    }
+  };
+
+  const handleSaveKeywords = () => {
+    if (interestKeywords.length === 0) {
+      toast.warning("저장할 키워드가 없습니다.");
+      return;
+    }
+
+    fetcher.submit(
+      { keywords: JSON.stringify(interestKeywords) },
+      { method: "post" },
+    );
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
+      {/* Toast Container */}
+      <ToastContainer />
+
       {/* 상단 헤더 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">트렌드 분석</h1>
-          <p className="text-muted-foreground">실시간 트렌드와 키워드 분석</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {periodOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <p className="text-muted-foreground">트렌드와 키워드 분석</p>
         </div>
       </div>
 
-      {/* 메인 콘텐츠 */}
-      <Tabs defaultValue="keywords" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="keywords" className="flex items-center gap-2">
-            <Hash className="h-4 w-4" />
-            인기 키워드
-          </TabsTrigger>
-          <TabsTrigger value="industry" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            산업별 트렌드
-          </TabsTrigger>
-          <TabsTrigger value="matching" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />내 글 매칭
-          </TabsTrigger>
-        </TabsList>
+      {/* 관심 키워드 입력 섹션 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            관심 키워드 설정
+          </CardTitle>
+          <p className="text-muted-foreground text-sm">
+            관심 있는 키워드를 설정하면 매일 아침 해당 키워드 기반으로 트렌드를
+            분석해드립니다. 평소 자주 사용하는 단어나 관심 있는 주제를
+            입력해주세요.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* 키워드 입력 */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="예: AI, 마케팅, 스타트업, 브랜딩..."
+                value={newKeyword}
+                onChange={(e) => setNewKeyword(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1"
+              />
+              <Button onClick={addKeyword} size="sm">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
 
-        {/* 인기 키워드 탭 */}
-        <TabsContent value="keywords" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                실시간 인기 키워드 TOP 20
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {trendingKeywords.map((item, index) => (
-                  <div
+            {/* 입력된 키워드 목록 */}
+            {interestKeywords.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {interestKeywords.map((keyword, index) => (
+                  <Badge
                     key={index}
-                    className="rounded-lg border p-4 transition-shadow hover:shadow-md"
+                    variant="secondary"
+                    className="flex items-center gap-1"
                   >
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-500">
-                          #{index + 1}
-                        </span>
-                        <Badge variant="outline" className="text-sm">
-                          {item.keyword}
-                        </Badge>
-                      </div>
-                      {formatGrowth(item.growth)}
-                    </div>
-                    <div className="text-muted-foreground flex items-center justify-between text-sm">
-                      <span>언급 {formatMentions(item.mentions)}회</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {item.category}
-                      </Badge>
-                    </div>
-                  </div>
+                    {keyword}
+                    <button
+                      onClick={() => removeKeyword(keyword)}
+                      className="ml-1 rounded-full p-0.5 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            )}
 
-        {/* 산업별 트렌드 탭 */}
-        <TabsContent value="industry" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {industryTrends.map((industry, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="h-5 w-5" />
-                      {industry.industry}
-                    </CardTitle>
+            {/* 저장 버튼 */}
+            {interestKeywords.length > 0 && (
+              <Button
+                className="w-full"
+                onClick={handleSaveKeywords}
+                disabled={fetcher.state === "submitting"}
+              >
+                {fetcher.state === "submitting"
+                  ? "저장 중..."
+                  : "관심 키워드 저장"}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 인기 키워드 */}
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              인기 키워드 TOP 20
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {trendingKeywords.map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border p-4 transition-shadow hover:shadow-md"
+                >
+                  <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground text-sm">
-                        성장률
+                      <span className="text-sm font-medium text-gray-500">
+                        #{index + 1}
                       </span>
-                      {formatGrowth(industry.totalGrowth)}
+                      <Badge variant="outline" className="text-sm">
+                        {item.keyword}
+                      </Badge>
                     </div>
+                    {formatGrowth(item.growth)}
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {industry.keywords.map((keyword, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between rounded bg-gray-50 p-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">
-                            {keyword.keyword}
-                          </span>
-                          <span className="text-muted-foreground text-xs">
-                            {formatMentions(keyword.mentions)}회
-                          </span>
-                        </div>
-                        {formatGrowth(keyword.growth)}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* 내 글 매칭 탭 */}
-        <TabsContent value="matching" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* 내 글 매칭도 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />내 글 트렌드 매칭도
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 text-center">
-                  <div className="mb-2 text-4xl font-bold text-blue-600">
-                    {myPostMatching.overallMatchScore}%
-                  </div>
-                  <div className="mb-4 h-3 w-full rounded-full bg-gray-200">
-                    <div
-                      className="h-3 rounded-full bg-blue-600"
-                      style={{ width: `${myPostMatching.overallMatchScore}%` }}
-                    />
-                  </div>
-                  <p className="text-muted-foreground text-sm">
-                    현재 트렌드와의 일치도
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold">사용한 키워드</h4>
-                  {myPostMatching.usedKeywords.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between rounded bg-gray-50 p-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {item.keyword}
-                        </Badge>
-                        <span className="text-muted-foreground text-xs">
-                          트렌드 #{item.trendRank}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium">
-                          {item.matchScore}%
-                        </span>
-                        <div className="h-1 w-12 rounded-full bg-gray-200">
-                          <div
-                            className="h-1 rounded-full bg-green-500"
-                            style={{ width: `${item.matchScore}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 추천사항 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5" />
-                  트렌드 활용 제안
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="mb-2 text-sm font-semibold">추천 키워드</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {myPostMatching.topTrendingKeywords.map(
-                        (keyword, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            #{keyword}
-                          </Badge>
-                        ),
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="mb-2 text-sm font-semibold">개선 제안</h4>
-                    <ul className="space-y-2">
-                      {myPostMatching.recommendations.map((rec, index) => (
-                        <li
-                          key={index}
-                          className="text-muted-foreground flex items-start gap-2 text-sm"
-                        >
-                          <span className="mt-0.5 text-blue-500">•</span>
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <Button className="w-full">
-                      <FileText className="mr-2 h-4 w-4" />
-                      새로운 글 작성하기
-                    </Button>
+                  <div className="text-muted-foreground flex items-center justify-between text-sm">
+                    <span>언급 {formatMentions(item.mentions)}회</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {item.category}
+                    </Badge>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

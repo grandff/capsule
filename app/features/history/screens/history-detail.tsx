@@ -7,6 +7,8 @@ import { z } from "zod";
 import { cacheKeys, memoryCache } from "~/core/lib/cache";
 import { requireAuthentication } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
+import { saveUserInsights } from "~/features/users/mutations";
+import { fetchUserInsights } from "~/features/users/utils/insights-utils";
 
 import { BackButton } from "../components/back-button";
 import { CommentsSection } from "../components/comments-section";
@@ -14,7 +16,11 @@ import { MentionsSection } from "../components/mentions-section";
 import { ThreadContent } from "../components/thread-content";
 import { ThreadSettings } from "../components/thread-settings";
 import { ThreadStats } from "../components/thread-stats";
-import { getThreadDetail } from "../queries";
+import { getFollowerChange, getThreadDetail } from "../queries";
+
+export const meta: Route.MetaFunction = () => {
+  return [{ title: `Detail | ${import.meta.env.VITE_APP_NAME}` }];
+};
 
 const paramsSchema = z.object({
   id: z.string(),
@@ -36,14 +42,50 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw new Response("Invalid thread ID", { status: 400 });
   }
 
-  const threadId = parseInt(parsedParams.data.id, 10);
-  if (isNaN(threadId)) {
-    throw new Response("Invalid thread ID", { status: 400 });
-  }
+  const threadId = parsedParams.data.id;
 
   try {
     const thread = await getThreadDetail(client, user.id, threadId);
-    return { thread };
+
+    // 최초 진입 시 인사이트 데이터 업데이트 (user_insights에만 저장)
+    try {
+      console.log("=== 최초 진입 시 인사이트 업데이트 시작 ===");
+
+      if (
+        thread.result_id &&
+        thread.result_id !== "ERROR" &&
+        thread.result_id !== "DELETED"
+      ) {
+        // 직접 인사이트 데이터 가져오기 및 저장
+        const insightsData = await fetchUserInsights(client, user.id);
+
+        if (insightsData.success && insightsData.data) {
+          await saveUserInsights(
+            client,
+            user.id,
+            thread.thread_id,
+            insightsData.data.data,
+          );
+          console.log("최초 진입 시 인사이트 업데이트 완료");
+        } else {
+          console.log("인사이트 데이터를 가져올 수 없습니다.");
+        }
+      }
+    } catch (insightsError) {
+      console.error("최초 진입 시 인사이트 업데이트 중 오류:", insightsError);
+      // 인사이트 업데이트 실패는 전체 로딩을 실패시키지 않음
+    }
+
+    // 팔로워 수 증감 계산
+    let followerChange = null;
+    try {
+      followerChange = await getFollowerChange(client, user.id, threadId);
+    } catch (followerError) {
+      console.error("Error calculating follower change:", followerError);
+      // 팔로워 수 증감 계산 실패는 전체 로딩을 실패시키지 않음
+    }
+
+    return { thread, followerChange };
   } catch (error) {
     console.error("Error loading thread detail:", error);
     throw new Response("Thread not found", { status: 404 });
@@ -140,6 +182,7 @@ export default function HistoryDetail({ loaderData }: Route.ComponentProps) {
           {/* 통계 정보 */}
           <ThreadStats
             thread={thread}
+            followerChange={loaderData.followerChange}
             onUpdateInsights={handleUpdateInsights}
             isUpdating={isUpdatingInsights}
           />

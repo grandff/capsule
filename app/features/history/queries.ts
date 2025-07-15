@@ -87,8 +87,13 @@ export async function getThreadsList(
 export async function getThreadDetail(
   client: SupabaseClient<Database>,
   userId: string,
-  threadId: number,
+  threadId: string,
 ) {
+  const threadIdNum = parseInt(threadId, 10);
+  if (isNaN(threadIdNum)) {
+    throw new Error("Invalid thread ID");
+  }
+
   const { data: thread, error } = await client
     .from("threads")
     .select(
@@ -118,7 +123,7 @@ export async function getThreadDetail(
     `,
     )
     .eq("profile_id", userId)
-    .eq("thread_id", threadId)
+    .eq("thread_id", threadIdNum)
     .single();
 
   if (error) {
@@ -127,6 +132,56 @@ export async function getThreadDetail(
   }
 
   return thread;
+}
+
+// 팔로워 수 증감 계산
+export async function getFollowerChange(
+  client: SupabaseClient<Database>,
+  userId: string,
+  threadId: string,
+) {
+  const threadIdNum = parseInt(threadId, 10);
+  if (isNaN(threadIdNum)) {
+    throw new Error("Invalid thread ID");
+  }
+
+  // 1. 게시글 작성 시점의 팔로워 수 (threads 테이블의 now_follow_cnt - 기준점)
+  const { data: thread, error: threadError } = await client
+    .from("threads")
+    .select("now_follow_cnt, created_at")
+    .eq("profile_id", userId)
+    .eq("thread_id", threadIdNum)
+    .single();
+
+  if (threadError || !thread) {
+    throw new Error("Thread not found");
+  }
+
+  // 2. 현재 팔로워 수 (user_insights의 최신 followers_count)
+  const { data: currentInsight, error: currentError } = await client
+    .from("user_insights")
+    .select("value")
+    .eq("profile_id", userId)
+    .eq("metric_name", "followers_count")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  // 현재 팔로워 수가 없으면 게시글 작성 시점의 팔로워 수 사용
+  const currentFollowers = currentInsight?.value || thread.now_follow_cnt;
+  const baselineFollowers = thread.now_follow_cnt; // 게시글 작성 시점의 팔로워 수
+
+  // 3. 증감 계산
+  const followerChange = currentFollowers - baselineFollowers;
+
+  return {
+    currentFollowers,
+    baselineFollowers,
+    followerChange,
+    isPositive: followerChange > 0,
+    isNegative: followerChange < 0,
+    isNeutral: followerChange === 0,
+  };
 }
 
 // 키워드 검색 (자동완성용)
