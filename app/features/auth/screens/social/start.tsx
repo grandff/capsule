@@ -53,6 +53,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const [client, headers] = makeServerClient(request);
 
   // Initialize OAuth flow with the specified provider
+  console.log(
+    `redirectTo: ${process.env.SITE_URL}/auth/social/complete/${parsedParams.provider}`,
+  );
+
   const { data: signInData, error: signInError } =
     await client.auth.signInWithOAuth({
       provider: parsedParams.provider,
