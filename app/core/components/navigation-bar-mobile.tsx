@@ -148,9 +148,9 @@ export function NavigationBarMobile({
       </nav>
       <SheetContent>
         <SheetHeader>
-          <SheetClose asChild>
+          {/* <SheetClose asChild>
             <Link to="/blog">Blog</Link>
-          </SheetClose>
+          </SheetClose> */}
           <SheetClose asChild>
             <Link to="/contact">Contact</Link>
           </SheetClose>

@@ -23,7 +23,7 @@ export default {
     return [
       "/legal/terms-of-service",
       "/legal/privacy-policy",
-      "/blog",
+      //"/blog",
       "/sitemap.xml",
       "/robots.txt",
       //...urls,
