@@ -10,9 +10,11 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { authenticatedRole } from "drizzle-orm/supabase";
+import { authUid, authenticatedRole } from "drizzle-orm/supabase";
 
 import { TREND_TYPES } from "~/constants";
+
+import { profiles } from "../users/schema";
 
 export const trendType = pgEnum(
   "trend_type",
@@ -26,15 +28,9 @@ export const trends = pgTable(
       .primaryKey()
       .generatedAlwaysAsIdentity(),
     trend_date: date().notNull(),
-    trend_content: text().notNull(),
-    trend_type: trendType().notNull(),
-    trend_rank: integer().notNull(),
-    trend_keyword_id: bigint({ mode: "number" }).references(
-      () => trendKeywords.trend_keyword_id,
-      {
-        onDelete: "cascade",
-      },
-    ),
+    profile_id: uuid()
+      .references(() => profiles.profile_id, { onDelete: "cascade" })
+      .notNull(),
     created_at: timestamp().notNull().defaultNow(),
     updated_at: timestamp().notNull().defaultNow(),
   },
@@ -77,9 +73,12 @@ export const trendKeywords = pgTable(
     trend_keyword_id: bigint({ mode: "number" })
       .primaryKey()
       .generatedAlwaysAsIdentity(),
-    sort_seq: integer().notNull(),
-    trend_keyword: text().notNull(),
-    trend_keyword_rank: integer().notNull(),
+    trend_id: bigint({ mode: "number" })
+      .references(() => trends.trend_id, { onDelete: "cascade" })
+      .notNull(),
+    keyword: text().notNull(),
+    rank: integer().notNull(),
+    description: text().notNull(),
     created_at: timestamp().notNull().defaultNow(),
     updated_at: timestamp().notNull().defaultNow(),
   },

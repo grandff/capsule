@@ -10,7 +10,7 @@ export async function getRecentThreads(
     .select("*")
     .eq("profile_id", userId)
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(3);
 
   if (error) {
     throw error;

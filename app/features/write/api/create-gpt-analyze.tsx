@@ -9,8 +9,10 @@ import { getRecentThreads } from "../queries";
 import { getAnalysisPrompt } from "./prompts";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  // 1. 헤더 검증 (cronjob에서만 호출 가능)
-  if (!validatePerplexityCronSecret(request)) {
+  // 1. 헤더 검증 (cronjob에서만 호출 가능) - 로컬 개발 환경에서는 건너뛰기
+  const isLocalDev =
+    process.env.NODE_ENV === "development" && !process.env.VERCEL;
+  if (!isLocalDev && !validatePerplexityCronSecret(request)) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -51,13 +53,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       let prompt = getAnalysisPrompt();
 
       // text1 ~ text5 치환
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 3; i++) {
         const threadIndex = i - 1;
         const threadText = recentThreads[threadIndex]?.thread || "데이터없음";
         prompt = prompt.replace(`{{text${i}}}`, threadText);
       }
 
       // 3-3. GPT 호출
+      console.log(prompt);
       console.log(`사용자 ${user.profile_id} 분석 시작...`);
       const analysisResult = await gptCompletion(prompt);
 

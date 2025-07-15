@@ -50,6 +50,20 @@
       "when": 1752536419153,
       "tag": "0006_even_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1752621160080,
+      "tag": "0007_flashy_silver_sable",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1752622120457,
+      "tag": "0008_yummy_raza",
+      "breakpoints": true
     }
   ]
 }

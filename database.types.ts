@@ -550,68 +550,70 @@ export type Database = {
       trend_keywords: {
         Row: {
           created_at: string
-          sort_seq: number
-          trend_keyword: string
-          trend_keyword_id: number
-          trend_keyword_rank: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          sort_seq: number
-          trend_keyword: string
-          trend_keyword_id?: never
-          trend_keyword_rank: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          sort_seq?: number
-          trend_keyword?: string
-          trend_keyword_id?: never
-          trend_keyword_rank?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      trends: {
-        Row: {
-          created_at: string
-          trend_content: string
-          trend_date: string
+          description: string
+          keyword: string
+          rank: number
           trend_id: number
-          trend_keyword_id: number | null
-          trend_rank: number
-          trend_type: Database["public"]["Enums"]["trend_type"]
+          trend_keyword_id: number
           updated_at: string
         }
         Insert: {
           created_at?: string
-          trend_content: string
-          trend_date: string
-          trend_id?: never
-          trend_keyword_id?: number | null
-          trend_rank: number
-          trend_type: Database["public"]["Enums"]["trend_type"]
+          description: string
+          keyword: string
+          rank: number
+          trend_id: number
+          trend_keyword_id?: never
           updated_at?: string
         }
         Update: {
           created_at?: string
-          trend_content?: string
-          trend_date?: string
-          trend_id?: never
-          trend_keyword_id?: number | null
-          trend_rank?: number
-          trend_type?: Database["public"]["Enums"]["trend_type"]
+          description?: string
+          keyword?: string
+          rank?: number
+          trend_id?: number
+          trend_keyword_id?: never
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "trends_trend_keyword_id_trend_keywords_trend_keyword_id_fk"
-            columns: ["trend_keyword_id"]
+            foreignKeyName: "trend_keywords_trend_id_trends_trend_id_fk"
+            columns: ["trend_id"]
             isOneToOne: false
-            referencedRelation: "trend_keywords"
-            referencedColumns: ["trend_keyword_id"]
+            referencedRelation: "trends"
+            referencedColumns: ["trend_id"]
+          },
+        ]
+      }
+      trends: {
+        Row: {
+          created_at: string
+          profile_id: string
+          trend_date: string
+          trend_id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          profile_id: string
+          trend_date: string
+          trend_id?: never
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          profile_id?: string
+          trend_date?: string
+          trend_id?: never
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trends_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
           },
         ]
       }

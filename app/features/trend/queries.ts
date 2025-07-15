@@ -10,6 +10,25 @@ export interface UserInterestKeyword {
   updated_at: Date;
 }
 
+export interface TrendKeyword {
+  trend_keyword_id: number;
+  trend_id: number;
+  keyword: string;
+  rank: number;
+  description: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Trend {
+  trend_id: number;
+  trend_date: string;
+  profile_id: string;
+  created_at: Date;
+  updated_at: Date;
+  trend_keywords: TrendKeyword[];
+}
+
 /**
  * 사용자의 관심 키워드 목록을 조회합니다.
  */
@@ -34,6 +53,50 @@ export async function getUserInterestKeywords(
     return data || [];
   } catch (error) {
     console.error("Error in getUserInterestKeywords:", error);
+    throw error;
+  }
+}
+
+/**
+ * 사용자의 최신 트렌드 데이터를 조회합니다.
+ */
+export async function getUserLatestTrends(
+  client: SupabaseClient,
+  profileId: string,
+): Promise<Trend | null> {
+  try {
+    const { data, error } = await client
+      .from("trends")
+      .select(
+        `
+        *,
+        trend_keywords (
+          trend_keyword_id,
+          keyword,
+          rank,
+          description,
+          created_at,
+          updated_at
+        )
+      `,
+      )
+      .eq("profile_id", profileId)
+      .order("trend_date", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        // 데이터가 없는 경우
+        return null;
+      }
+      console.error("Error fetching user latest trends:", error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getUserLatestTrends:", error);
     throw error;
   }
 }
