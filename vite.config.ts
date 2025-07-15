@@ -23,14 +23,22 @@ export default defineConfig((config) => {
   ) {
     plugins = [...plugins, sentryReactRouter(sentryConfig, config)];
   }
+
+  // 로컬 개발 환경에서만 HTTPS 설정 적용
+  const isLocalDev =
+    process.env.NODE_ENV === "development" && !process.env.VERCEL;
+  const httpsConfig = isLocalDev
+    ? {
+        key: fs.readFileSync(path.resolve(__dirname, "localhost+2-key.pem")),
+        cert: fs.readFileSync(path.resolve(__dirname, "localhost+2.pem")),
+      }
+    : undefined;
+
   return {
     server: {
       allowedHosts: true,
-      // thread api 연계를 위한 localhost https 설정
-      https: {
-        key: fs.readFileSync(path.resolve(__dirname, "localhost+2-key.pem")),
-        cert: fs.readFileSync(path.resolve(__dirname, "localhost+2.pem")),
-      },
+      // thread api 연계를 위한 localhost https 설정 (로컬 개발 환경에서만)
+      ...(httpsConfig && { https: httpsConfig }),
       watch: {
         ignored: [
           "**/*.spec.ts",
