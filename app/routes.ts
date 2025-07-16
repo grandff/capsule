@@ -33,7 +33,10 @@ export default [
         route("/callback", "features/settings/api/threads-callback.tsx"),
       ]),
       route("/disconnect", "features/settings/api/disconnect.tsx"),
-      route("/setting", "features/settings/api/setting.tsx"),
+      route(
+        "/refresh-token",
+        "features/settings/api/refresh-threads-token.tsx",
+      ),
     ]),
     ...prefix("/users", [
       index("features/users/api/delete-account.tsx"),

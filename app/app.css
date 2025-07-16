@@ -19,6 +19,9 @@ body {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -151,31 +154,25 @@ body {
       transform: translateX(-50%);
     }
   }
-  --animate-marquee:
-    marquee var(--duration) infinite linear;
-  --animate-marquee-vertical:
-    marquee-vertical var(--duration) linear infinite
-;
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
   @keyframes marquee {
-  from {
-    transform:
-    translateX(0);
+    from {
+      transform: translateX(0);
     }
-  to {
-    transform:
-    translateX(calc(-100% - var(--gap)));
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
     }
   }
   @keyframes marquee-vertical {
-  from {
-    transform:
-    translateY(0);
+    from {
+      transform: translateY(0);
     }
-  to {
-    transform:
-    translateY(calc(-100% - var(--gap)));
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
     }
-  }}
+  }
+}
 
 @layer base {
   * {
@@ -184,6 +181,7 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
   html.dark {
     @apply bg-background!;
   }
@@ -193,4 +191,149 @@ body {
   #nprogress .spinner-icon {
     @apply border-t-primary! border-l-primary!;
   }
+}
+
+/* 색약 모드 스타일 */
+.colorblind-mode {
+  filter: grayscale(100%) contrast(120%);
+}
+
+.colorblind-mode * {
+  filter: grayscale(100%) contrast(120%);
+}
+
+/* 색약 모드에서 특정 요소들은 원래 색상 유지 */
+.colorblind-mode .colorblind-exempt {
+  filter: none;
+}
+
+/* 색약 모드에서 이미지와 아이콘도 흑백 처리 */
+.colorblind-mode img,
+.colorblind-mode svg,
+.colorblind-mode .icon {
+  filter: grayscale(100%) contrast(120%);
+}
+
+/* 색약 모드에서 배경색과 테두리도 흑백 처리 */
+.colorblind-mode [class*="bg-"],
+.colorblind-mode [class*="border-"] {
+  filter: grayscale(100%) contrast(120%);
+}
+
+/* 글꼴 크기 조정을 위한 유틸리티 클래스 */
+.text-size-default {
+  font-size: 16px;
+}
+
+.text-size-large {
+  font-size: 18px;
+}
+
+.text-size-larger {
+  font-size: 20px;
+}
+
+/* 글꼴 크기에 따른 전체 UI 스케일 조정 */
+.font-size-large {
+  font-size: 18px !important;
+}
+
+.font-size-large p,
+.font-size-large span,
+.font-size-large div,
+.font-size-large a,
+.font-size-large button,
+.font-size-large input,
+.font-size-large textarea,
+.font-size-large select,
+.font-size-large label {
+  font-size: 18px !important;
+}
+
+.font-size-large h1 {
+  font-size: 40.5px !important;
+}
+
+.font-size-large h2 {
+  font-size: 33.75px !important;
+}
+
+.font-size-large h3 {
+  font-size: 27px !important;
+}
+
+.font-size-large h4 {
+  font-size: 22.5px !important;
+}
+
+.font-size-large h5 {
+  font-size: 20.25px !important;
+}
+
+.font-size-large h6 {
+  font-size: 18px !important;
+}
+
+.font-size-large .text-sm {
+  font-size: 15.75px !important;
+}
+
+.font-size-large .text-lg {
+  font-size: 20px !important;
+}
+
+.font-size-large .text-xl {
+  font-size: 22px !important;
+}
+
+.font-size-larger {
+  font-size: 20px !important;
+}
+
+.font-size-larger p,
+.font-size-larger span,
+.font-size-larger div,
+.font-size-larger a,
+.font-size-larger button,
+.font-size-larger input,
+.font-size-larger textarea,
+.font-size-larger select,
+.font-size-larger label {
+  font-size: 20px !important;
+}
+
+.font-size-larger h1 {
+  font-size: 45px !important;
+}
+
+.font-size-larger h2 {
+  font-size: 37.5px !important;
+}
+
+.font-size-larger h3 {
+  font-size: 30px !important;
+}
+
+.font-size-larger h4 {
+  font-size: 25px !important;
+}
+
+.font-size-larger h5 {
+  font-size: 22.5px !important;
+}
+
+.font-size-larger h6 {
+  font-size: 20px !important;
+}
+
+.font-size-larger .text-sm {
+  font-size: 17.5px !important;
+}
+
+.font-size-larger .text-lg {
+  font-size: 22px !important;
+}
+
+.font-size-larger .text-xl {
+  font-size: 24px !important;
 }

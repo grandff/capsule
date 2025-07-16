@@ -12,7 +12,7 @@ export async function getThreadsAccessToken(
 ) {
   const { data, error } = await client
     .from("sns_profiles")
-    .select("access_token, expires_at, target_type, user_id")
+    .select("access_token, expires_at, target_type, user_id, updated_at")
     .eq("profile_id", userId)
     .eq("target_type", "thread")
     .single();
@@ -23,6 +23,7 @@ export async function getThreadsAccessToken(
       accessToken: null,
       expiresAt: null,
       snsId: null,
+      updatedAt: null,
     };
   }
 
@@ -31,6 +32,7 @@ export async function getThreadsAccessToken(
       accessToken: null,
       expiresAt: null,
       snsId: null,
+      updatedAt: null,
     };
   }
 
@@ -41,6 +43,7 @@ export async function getThreadsAccessToken(
       accessToken: decryptedToken,
       expiresAt: data.expires_at,
       snsId: data.user_id,
+      updatedAt: data.updated_at,
     };
   } catch (error) {
     console.error("Error decrypting token:", error);
@@ -48,6 +51,7 @@ export async function getThreadsAccessToken(
       accessToken: null,
       expiresAt: null,
       snsId: null,
+      updatedAt: null,
     };
   }
 }
@@ -87,15 +91,28 @@ export async function getSetting(
   client: SupabaseClient<Database>,
   userId: string,
 ) {
+  console.log("getSetting 호출 - userId:", userId);
+
   const { data, error } = await client
     .from("setting")
     .select("theme, font_size, color_blind_mode")
     .eq("profile_id", userId)
     .single();
 
+  console.log("데이터베이스 조회 결과:", { data, error });
+
   if (error) {
+    console.log("설정 조회 오류:", error);
     return null;
   }
 
-  return data;
+  // 데이터베이스 컬럼명을 프론트엔드 필드명으로 변환
+  const result = {
+    theme: data.theme,
+    fontSize: data.font_size,
+    colorBlindMode: data.color_blind_mode,
+  };
+
+  console.log("변환된 설정:", result);
+  return result;
 }

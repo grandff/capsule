@@ -9,10 +9,20 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { authUid, authenticatedRole } from "drizzle-orm/supabase";
+import { z } from "zod";
 
 import { NOTIFICATION_TYPES } from "~/constants";
 
 import { profiles } from "../users/schema";
+
+// Zod 스키마
+export const settingSchema = z.object({
+  theme: z.enum(["light", "dark", "system"]),
+  fontSize: z.enum(["default", "large", "larger"]),
+  colorBlindMode: z.boolean(),
+});
+
+export type SettingFormData = z.infer<typeof settingSchema>;
 
 export const notificationType = pgEnum(
   "notification_type",

@@ -1,6 +1,8 @@
 import type { Route } from "./+types/private.layout";
 
+import { useEffect } from "react";
 import { Outlet, redirect } from "react-router";
+import { useRouteLoaderData } from "react-router";
 
 import makeServerClient from "../lib/supa-client.server";
 
@@ -13,7 +15,6 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect("/login");
   }
 
-  // Return an empty object to avoid the "Cannot read properties of undefined" error
   return {};
 }
 

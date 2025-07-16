@@ -94,3 +94,24 @@ export async function saveSetting(
     throw error;
   }
 }
+
+// 쓰레드 토큰정보 업데이트
+export async function updateThreadsAccessToken(
+  client: SupabaseClient<Database>,
+  {
+    userId,
+    accessToken,
+    expiresIn,
+  }: { userId: string; accessToken: string; expiresIn: number },
+) {
+  const expiresAt = DateTime.now().plus({ seconds: expiresIn });
+  const { data, error } = await client
+    .from("sns_profiles")
+    .update({
+      access_token: accessToken,
+      expires_at: expiresAt.toISO(),
+    })
+    .eq("profile_id", userId)
+    .eq("target_type", "thread")
+    .select();
+}
