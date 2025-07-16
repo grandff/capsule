@@ -83,3 +83,66 @@ export async function getFollowersCount(
   );
   return followersMetric?.total_value?.value || 0;
 }
+
+// 회원탈퇴 처리
+export async function deleteUserAccount(
+  client: SupabaseClient<Database>,
+  userId: string,
+) {
+  try {
+    // 1. 사용자와 관련된 모든 데이터 삭제
+    const { error: userInsightsError } = await client
+      .from("user_insights")
+      .delete()
+      .eq("profile_id", userId);
+
+    if (userInsightsError) {
+      console.error("Error deleting user insights:", userInsightsError);
+      throw userInsightsError;
+    }
+
+    const { error: threadMediaError } = await client
+      .from("thread_media")
+      .delete()
+      .eq("profile_id", userId);
+
+    if (threadMediaError) {
+      console.error("Error deleting thread media:", threadMediaError);
+      throw threadMediaError;
+    }
+
+    const { error: threadsError } = await client
+      .from("threads")
+      .delete()
+      .eq("profile_id", userId);
+
+    if (threadsError) {
+      console.error("Error deleting threads:", threadsError);
+      throw threadsError;
+    }
+
+    const { error: profilesError } = await client
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+
+    if (profilesError) {
+      console.error("Error deleting profile:", profilesError);
+      throw profilesError;
+    }
+
+    // 2. Supabase Auth에서 사용자 삭제
+    const { error: authError } = await client.auth.admin.deleteUser(userId);
+
+    if (authError) {
+      console.error("Error deleting auth user:", authError);
+      throw authError;
+    }
+
+    console.log("User account deleted successfully");
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteUserAccount:", error);
+    throw error;
+  }
+}

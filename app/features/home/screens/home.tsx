@@ -129,36 +129,36 @@ export default function Home() {
   }, []);
 
   // 사용자 후기 데이터
-  const reviews = [
-    {
-      id: 1,
-      name: "김민수",
-      avatar: "/nft.jpg",
-      content:
-        "AI가 작성한 홍보글이 정말 효과적이에요! 팔로워 증가율이 3배나 올랐습니다.",
-    },
-    {
-      id: 2,
-      name: "이지영",
-      avatar: "/nft-2.jpg",
-      content:
-        "간단한 선택만으로 고품질 홍보글이 자동으로 업로드되어 너무 편해요.",
-    },
-    {
-      id: 3,
-      name: "박준호",
-      avatar: "/nft.jpg",
-      content:
-        "브랜드 홍보가 이렇게 쉬울 수 있구나! AI가 트렌드를 반영해서 글을 써줘서 인기가 많아졌어요.",
-    },
-    {
-      id: 4,
-      name: "최수진",
-      avatar: "/nft-2.jpg",
-      content:
-        "스레드, X 등 여러 플랫폼에 한 번에 업로드되어 시간이 정말 절약됩니다.",
-    },
-  ];
+  // const reviews = [
+  //   {
+  //     id: 1,
+  //     name: "김민수",
+  //     avatar: "/nft.jpg",
+  //     content:
+  //       "AI가 작성한 홍보글이 정말 효과적이에요! 팔로워 증가율이 3배나 올랐습니다.",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "이지영",
+  //     avatar: "/nft-2.jpg",
+  //     content:
+  //       "간단한 선택만으로 고품질 홍보글이 자동으로 업로드되어 너무 편해요.",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "박준호",
+  //     avatar: "/nft.jpg",
+  //     content:
+  //       "브랜드 홍보가 이렇게 쉬울 수 있구나! AI가 트렌드를 반영해서 글을 써줘서 인기가 많아졌어요.",
+  //   },
+  //   {
+  //     id: 4,
+  //     name: "최수진",
+  //     avatar: "/nft-2.jpg",
+  //     content:
+  //       "스레드, X 등 여러 플랫폼에 한 번에 업로드되어 시간이 정말 절약됩니다.",
+  //   },
+  // ];
 
   // 서비스 특징 데이터
   const features = [
@@ -204,19 +204,22 @@ export default function Home() {
       title: "내가 홍보하고 싶은 SNS에 연결해보세요",
       description: "Thread, X 등 홍보하고 싶은 SNS를 연결하면,",
       description2: "Capsule에서 자동으로 업로드해드려요.",
-      image: "/nft.jpg",
+      image:
+        "https://ixloqzfjxwwgfytruzvn.supabase.co/storage/v1/object/public/upload-medias/public/main/1.png",
     },
     {
       title: "나만의 스타일을 선택해보세요",
       description: "분위기, 톤 등 나만의 스타일을 선택하면,",
       description2: "Casuple이 매력적인 카피라이터가 되어드려요.",
-      image: "/nft-2.jpg",
+      image:
+        "https://ixloqzfjxwwgfytruzvn.supabase.co/storage/v1/object/public/upload-medias/public/main/2.png",
     },
     {
       title: "모바일과 PC, 어디서나 사용해 보세요",
       description: "환경과 장소에 구애받지 않고,",
       description2: "어디서나 사용해 보세요.",
-      image: "/nft.jpg",
+      image:
+        "https://ixloqzfjxwwgfytruzvn.supabase.co/storage/v1/object/public/upload-medias/public/main/3.png",
     },
   ];
 
@@ -337,24 +340,32 @@ export default function Home() {
         ref={(el) => {
           sectionRefs.current["video-section"] = el;
         }}
-        className={`mt-20 w-full max-w-4xl rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 p-8 transition-all duration-1000 ${
+        className={`mt-20 w-full max-w-4xl transition-all duration-1000 ${
           visibleSections.has("video-section")
             ? "translate-y-0 opacity-100"
             : "translate-y-10 opacity-0"
         }`}
       >
-        <div className="flex aspect-video w-full items-center justify-center rounded-xl bg-gradient-to-br from-gray-200 to-gray-300">
-          <div className="text-center">
-            <div className="mb-4 text-6xl">🎥</div>
-            <p className="text-lg text-gray-600">
-              AI 홍보글 생성 및 자동 업로드 과정
-            </p>
-          </div>
+        <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800">
+          <video
+            className="h-full w-full object-cover"
+            autoPlay
+            loop
+            muted
+            preload="metadata"
+            style={{ pointerEvents: "none" }}
+          >
+            <source
+              src="https://ixloqzfjxwwgfytruzvn.supabase.co/storage/v1/object/public/upload-medias/public/main/intro.mp4"
+              type="video/mp4"
+            />
+            브라우저가 비디오를 지원하지 않습니다.
+          </video>
         </div>
       </div>
 
-      {/* 2. 사용자 후기 영역 */}
-      <div
+      {/* 2. 사용자 후기 영역 - 주석처리 */}
+      {/* <div
         id="reviews-section"
         ref={(el) => {
           sectionRefs.current["reviews-section"] = el;
@@ -369,7 +380,6 @@ export default function Home() {
           고민하지 말고 Capsule로 홍보하세요!
         </h2>
         <div className="space-y-6">
-          {/* 첫 번째 줄 - 왼쪽으로 이동 */}
           <Marquee className="py-4" pauseOnHover>
             {reviews.slice(0, 2).map((review) => (
               <Card
@@ -406,7 +416,6 @@ export default function Home() {
             ))}
           </Marquee>
 
-          {/* 두 번째 줄 - 오른쪽으로 이동 */}
           <Marquee className="py-4" pauseOnHover reverse>
             {reviews.slice(2, 4).map((review) => (
               <Card
@@ -443,7 +452,7 @@ export default function Home() {
             ))}
           </Marquee>
         </div>
-      </div>
+      </div> */}
 
       {/* 3. 사용 방법 소개 영역 */}
       <div
@@ -478,11 +487,12 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex-1">
-                <div className="flex aspect-video items-center justify-center rounded-xl bg-gradient-to-br from-gray-200 to-gray-300">
-                  <div className="text-center">
-                    <div className="mb-2 text-4xl">📱</div>
-                    <p className="text-sm text-gray-600">화면 캡처</p>
-                  </div>
+                <div className="flex aspect-video items-center justify-center overflow-hidden rounded-xl">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </div>
             </div>
@@ -540,26 +550,26 @@ export default function Home() {
             href="https://play.google.com/store/apps/details?id=com.capsule.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-lg bg-black px-6 py-3 text-white transition-colors hover:bg-gray-800"
+            className="flex items-center justify-center rounded-lg bg-black p-3 transition-transform hover:scale-105"
           >
-            <Smartphone className="h-6 w-6" />
-            <div className="text-left">
-              <div className="text-xs">GET IT ON</div>
-              <div className="text-sm font-semibold">Google Play</div>
-            </div>
+            <img
+              src="https://ixloqzfjxwwgfytruzvn.supabase.co/storage/v1/object/public/upload-medias/public/main/googlePlay.png"
+              alt="Google Play Store"
+              className="h-12 w-auto"
+            />
           </a>
 
           <a
             href="https://apps.apple.com/app/capsule/id123456789"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-lg bg-black px-6 py-3 text-white transition-colors hover:bg-gray-800"
+            className="flex items-center justify-center rounded-lg bg-black p-3 transition-transform hover:scale-105"
           >
-            <Apple className="h-6 w-6" />
-            <div className="text-left">
-              <div className="text-xs">Download on the</div>
-              <div className="text-sm font-semibold">App Store</div>
-            </div>
+            <img
+              src="https://ixloqzfjxwwgfytruzvn.supabase.co/storage/v1/object/public/upload-medias/public/main/appStore.png"
+              alt="App Store"
+              className="h-12 w-auto"
+            />
           </a>
         </div>
       </div>

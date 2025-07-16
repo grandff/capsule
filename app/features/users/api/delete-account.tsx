@@ -15,74 +15,36 @@
  */
 import type { Route } from "./+types/delete-account";
 
-import { data, redirect } from "react-router";
+import { redirect } from "react-router";
 
-import { requireAuthentication, requireMethod } from "~/core/lib/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
-/**
- * Action handler for processing account deletion requests
- *
- * This function handles the complete account deletion flow:
- * 1. Validates that the request method is DELETE
- * 2. Authenticates the user making the request
- * 3. Deletes the user from Supabase Auth
- * 4. Attempts to clean up the user's avatar from storage
- * 5. Redirects to the home page or returns error response
- *
- * Security considerations:
- * - Requires DELETE method to prevent unintended account deletions
- * - Requires authentication to protect user accounts
- * - Uses admin client for user deletion (elevated permissions)
- * - Handles errors gracefully with appropriate status codes
- * - Performs cleanup of associated resources
- *
- * Note: This is a destructive operation that permanently removes the user's
- * account and associated data. It cannot be undone.
- *
- * @param request - The incoming HTTP request
- * @returns Redirect to home page or error response
- */
-export async function action({ request }: Route.ActionArgs) {
-  // Validate request method (only allow DELETE)
-  requireMethod("DELETE")(request);
+import { deleteUserAccount } from "../mutations";
 
-  // Create a server-side Supabase client with the user's session
+export async function action({ request }: Route.ActionArgs) {
   const [client] = makeServerClient(request);
 
-  // Verify the user is authenticated
-  await requireAuthentication(client);
-
-  // Get the authenticated user's information
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-
-  // Delete the user from Supabase Auth
-  const { error } = await adminClient.auth.admin.deleteUser(user!.id);
-
-  // Handle API errors
-  if (error) {
-    return data(
-      {
-        error: error.message,
-      },
-      {
-        status: 500,
-      },
-    );
-  }
-
-  // Clean up user's avatar from storage
-  // Note: We don't fail the request if this cleanup fails
   try {
-    await adminClient.storage.from("avatars").remove([user!.id]);
-  } catch (error) {
-    // We don't really care if this fails, as the main user deletion succeeded
-    // This is just cleanup of associated resources
-  }
+    // 현재 사용자 정보 가져오기
+    const {
+      data: { user },
+      error: userError,
+    } = await client.auth.getUser();
 
-  // Redirect to home page after successful deletion
-  return redirect("/");
+    if (userError || !user) {
+      return { success: false, error: "사용자 인증에 실패했습니다." };
+    }
+
+    // 회원탈퇴 처리
+    await deleteUserAccount(client, user.id);
+
+    // 로그아웃 처리
+    await client.auth.signOut();
+
+    // 홈페이지로 리다이렉트
+    return redirect("/");
+  } catch (error) {
+    console.error("회원탈퇴 중 오류:", error);
+    return { success: false, error: "회원탈퇴 처리 중 오류가 발생했습니다." };
+  }
 }

@@ -1,10 +1,21 @@
-import { Eye, EyeOff, Monitor, Moon, Sun, Type } from "lucide-react";
+import { Eye, EyeOff, Monitor, Moon, Sun, Type, UserX } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Form, useFetcher } from "react-router";
+import { Form, useFetcher, useNavigate } from "react-router";
 import { Theme, useTheme } from "remix-themes";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/core/components/ui/alert-dialog";
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 import {
@@ -22,6 +33,7 @@ export default function Setting() {
   const { t } = useTranslation();
   const [theme, setTheme] = useTheme();
   const fetcher = useFetcher();
+  const navigate = useNavigate();
 
   // Context에서 설정 가져오기
   const {
@@ -36,6 +48,7 @@ export default function Setting() {
   const [themeError, setThemeError] = useState<string | null>(null);
   const [fontSizeError, setFontSizeError] = useState<string | null>(null);
   const [colorBlindError, setColorBlindError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // 테마 변경 핸들러
   const handleThemeChange = async (newTheme: "light" | "dark" | "system") => {
@@ -87,6 +100,12 @@ export default function Setting() {
       console.error("색약 모드 변경 중 오류:", error);
       setColorBlindError("색약 모드 변경에 실패했습니다.");
     }
+  };
+
+  // 회원탈퇴 처리
+  const handleDeleteAccount = () => {
+    setShowDeleteDialog(false);
+    fetcher.submit({}, { method: "POST", action: "/api/users" });
   };
 
   return (
@@ -318,6 +337,94 @@ export default function Setting() {
             >
               색약 모드: {colorBlindMode ? "활성화" : "비활성화"}
             </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 회원탈퇴 영역 */}
+      <Card className="border-red-200 dark:border-red-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <UserX className="h-5 w-5" />
+            회원탈퇴
+          </CardTitle>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            계정을 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
+              <h4 className="mb-2 font-medium text-red-800 dark:text-red-200">
+                탈퇴 시 삭제되는 데이터:
+              </h4>
+              <ul className="space-y-1 text-sm text-red-700 dark:text-red-300">
+                <li>• 개인 프로필 정보</li>
+                <li>• 작성한 모든 게시글</li>
+                <li>• 업로드한 미디어 파일</li>
+                <li>• 연결된 SNS 계정 정보</li>
+                <li>• 사용 통계 및 분석 데이터</li>
+              </ul>
+            </div>
+
+            <AlertDialog
+              open={showDeleteDialog}
+              onOpenChange={setShowDeleteDialog}
+            >
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="w-full"
+                  disabled={fetcher.state !== "idle"}
+                >
+                  {fetcher.state !== "idle" ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      탈퇴 처리 중...
+                    </>
+                  ) : (
+                    <>
+                      <UserX className="mr-2 h-4 w-4" />
+                      회원탈퇴
+                    </>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-red-600">
+                    정말 탈퇴하시겠습니까?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    회원탈퇴를 진행하면 다음 데이터가{" "}
+                    <strong>영구적으로 삭제</strong>됩니다:
+                    <br />
+                    <br />
+                    • 개인 프로필 정보
+                    <br />
+                    • 작성한 모든 게시글
+                    <br />
+                    • 업로드한 미디어 파일
+                    <br />
+                    • 연결된 SNS 계정 정보
+                    <br />
+                    • 사용 통계 및 분석 데이터
+                    <br />
+                    <br />이 작업은 되돌릴 수 없습니다. 정말 탈퇴하시겠습니까?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    탈퇴하기
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardContent>
       </Card>

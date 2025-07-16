@@ -240,6 +240,13 @@ export function NavigationBar({
           >
             Contact
           </Link>
+          <Link
+            to="/faq"
+            viewTransition
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            FAQ
+          </Link>
           {/* <Link
             to="/payments/checkout"
             viewTransition
@@ -285,6 +292,9 @@ export function NavigationBar({
             </SheetClose> */}
             <SheetClose asChild>
               <Link to="/contact">Contact</Link>
+            </SheetClose>
+            <SheetClose asChild>
+              <Link to="/faq">FAQ</Link>
             </SheetClose>
             <SheetClose asChild>
               <Link to="/payments/checkout">Payments</Link>

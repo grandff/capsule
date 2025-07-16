@@ -123,6 +123,7 @@ export default [
       route("/logout", "features/auth/screens/logout.tsx"),
     ]),
     route("/contact", "features/contact/screens/contact-us.tsx"),
+    route("/faq", "features/faq/screens/faq.tsx"),
   ]),
 
   layout("core/layouts/private.layout.tsx", { id: "private-dashboard" }, [
