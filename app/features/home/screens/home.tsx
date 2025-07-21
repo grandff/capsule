@@ -18,7 +18,7 @@ import { SparklesText } from "components/magicui/sparkles-text";
 import { Apple, Monitor, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useOutletContext } from "react-router";
+import { redirect, useNavigate, useOutletContext } from "react-router";
 
 import {
   Avatar,
@@ -28,6 +28,8 @@ import {
 import { Button } from "~/core/components/ui/button";
 import { Card, CardContent } from "~/core/components/ui/card";
 import i18next from "~/core/lib/i18next.server";
+import makeServerClient from "~/core/lib/supa-client.server";
+import { getUserProfile } from "~/features/users/queries";
 
 /**
  * Meta function for setting page metadata
@@ -67,8 +69,20 @@ export const meta: Route.MetaFunction = ({ data }) => {
 export async function loader({ request }: Route.LoaderArgs) {
   // Get a translation function for the user's locale from the request
   const t = await i18next.getFixedT(request);
+  const [client] = makeServerClient(request);
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (user) {
+    const profile = await getUserProfile(client, {
+      userId: user.id,
+    });
+    if (profile) {
+      return redirect("/dashboard");
+    }
+  }
 
-  // TODO 로그인 된 상태면 대시보드로 리다이렉트
+  // 로그인 된 상태면 대시보드로 리다이렉트
 
   // Return translated strings for use in both the component and meta function
   return {

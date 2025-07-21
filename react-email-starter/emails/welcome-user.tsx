@@ -15,20 +15,9 @@ import {
   Text,
 } from "@react-email/components";
 
-interface WelcomeUserEmailProps {
-  steps: {
-    id: number;
-    Description: React.ReactNode;
-  }[];
-  links: {
-    title: string;
-    href: string;
-  }[];
-}
-
 const baseUrl = "https://capsule-three.vercel.app";
 
-export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
+export const WelcomeUserEmail = () => {
   return (
     <Html>
       <Head />
@@ -83,7 +72,20 @@ export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
               </Row>
             </Section>
 
-            <ul>{steps?.map(({ Description }) => Description)}</ul>
+            <ul>
+              <li className="mb-20" key={1}>
+                <strong>Step 1.</strong> 오늘 다루고 싶은 주제를 간단히
+                입력하고, 원하는 분위기를 선택하세요.
+              </li>
+              <li className="mb-20" key={2}>
+                <strong>Step 2.</strong> Capsule이 브랜드 스타일에 맞춰 고퀄리티
+                홍보 글을 자동으로 만들어드립니다.
+              </li>
+              <li className="mb-20" key={3}>
+                <strong>Step 3.</strong> 완성된 글을 소셜 미디어에 바로
+                공유하고, 반응을 확인해보세요.
+              </li>
+            </ul>
 
             <Section className="text-center">
               <Button className="bg-brand rounded-lg px-[18px] py-3 text-white">
@@ -112,45 +114,5 @@ export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
     </Html>
   );
 };
-
-WelcomeUserEmail.PreviewProps = {
-  steps: [
-    {
-      id: 1,
-      Description: (
-        <li className="mb-20" key={1}>
-          <strong>Step 1.</strong> 오늘 다루고 싶은 주제를 간단히 입력하고,
-          원하는 분위기를 선택하세요.
-        </li>
-      ),
-    },
-    {
-      id: 2,
-      Description: (
-        <li className="mb-20" key={2}>
-          <strong>Step 2.</strong> Capsule이 브랜드 스타일에 맞춰 고퀄리티 홍보
-          글을 자동으로 만들어드립니다.
-        </li>
-      ),
-    },
-    {
-      id: 3,
-      Description: (
-        <li className="mb-20" key={3}>
-          <strong>Step 3.</strong> 완성된 글을 소셜 미디어에 바로 공유하고,
-          반응을 확인해보세요.
-        </li>
-      ),
-    },
-  ],
-  links: [
-    {
-      title: "Visit the forums",
-      href: "https://www.netlify.com",
-    },
-    { title: "Read the docs", href: "https://www.netlify.com" },
-    { title: "Contact an expert", href: "https://www.netlify.com" },
-  ],
-} satisfies WelcomeUserEmailProps;
 
 export default WelcomeUserEmail;

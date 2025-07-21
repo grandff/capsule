@@ -18,7 +18,6 @@ import type { Route } from "./+types/mailer";
 import * as Sentry from "@sentry/node";
 import WelcomeUserEmail from "react-email-starter/emails/welcome-user";
 import { data } from "react-router";
-import WelcomeEmail from "transactional-emails/emails/welcome";
 
 import resendClient from "~/core/lib/resend-client.server";
 import adminClient from "~/core/lib/supa-admin-client.server";
@@ -55,12 +54,78 @@ interface EmailMessage {
  * @param request - The incoming HTTP request from the cron job
  * @returns A response with appropriate status code (200 for success, 401 for unauthorized)
  */
+
+export async function loader({ request }: Route.LoaderArgs) {
+  // 개발 환경을 제외하고는 접근불가 403
+  if (process.env.NODE_ENV !== "development") {
+    return data(null, { status: 403 });
+  }
+  // Pop a message from the Postgres message queue (PGMQ)
+  // Note: Using admin client is necessary to access the queue
+  const { data: message, error } = await adminClient
+    // @ts-expect-error - PGMQ types are not fully defined in the Supabase client
+    .schema("pgmq_public")
+    .rpc("pop", {
+      queue_name: "mailer", // Queue name in Postgres
+    });
+
+  // Log any errors that occur when accessing the queue
+  if (error) {
+    console.error("Error accessing the queue", error);
+    Sentry.captureException(
+      error instanceof Error ? error : new Error(String(error)),
+    );
+  }
+
+  // Process the message if one was retrieved from the queue
+  if (message.length > 0 && message[0]) {
+    // Extract email details from the message
+    const {
+      message: { to, data: emailData, template },
+    } = message[0] as { message: EmailMessage };
+
+    // Process different email templates
+    if (template === "welcome") {
+      // Check if Resend client is available
+      if (!resendClient) {
+        console.error("Resend client is not configured");
+        Sentry.captureException(new Error("Resend client is not configured"));
+        return data(null, { status: 500 });
+      }
+
+      // Send welcome email using the Resend client
+      const { error } = await resendClient.emails.send({
+        // Make sure this domain is the Resend domain.
+        from: "Capsule <admin@mail.capsule.diy>",
+        to: [to],
+        subject: "3번 클릭으로 끝내는 글쓰기, 시작해보세요!",
+        react: WelcomeUserEmail(),
+      });
+
+      // Log any errors that occur during email sending
+      if (error) {
+        console.error("Error sending email", error);
+        Sentry.captureException(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+      }
+    }
+    // Additional templates can be handled here with more if/else conditions
+  }
+
+  // Return success response
+  // Note: We return 200 even if there were errors to prevent the cron job from failing
+  // Errors are tracked in Sentry for monitoring and debugging
+  return data(null, { status: 200 });
+}
+
 export async function action({ request }: Route.LoaderArgs) {
   // Security check: Verify this is a POST request with the correct secret
   if (
     request.method !== "POST" ||
     request.headers.get("Authorization") !== process.env.CRON_SECRET
   ) {
+    console.error("Unauthorized request");
     return data(null, { status: 401 });
   }
 
@@ -75,14 +140,18 @@ export async function action({ request }: Route.LoaderArgs) {
 
   // Log any errors that occur when accessing the queue
   if (error) {
+    console.error("Error accessing the queue", error);
     Sentry.captureException(
       error instanceof Error ? error : new Error(String(error)),
     );
   }
 
+  console.error("message", message);
+
   // Process the message if one was retrieved from the queue
   if (message) {
     // Extract email details from the message
+    console.error("message", message);
     const {
       message: { to, data: emailData, template },
     } = message as { message: EmailMessage };
@@ -102,11 +171,12 @@ export async function action({ request }: Route.LoaderArgs) {
         from: "CapsuleMaster <admin@mail.capsule.diy>",
         to: [to],
         subject: "3번 클릭으로 끝내는 글쓰기, 시작해보세요!",
-        react: WelcomeUserEmail({ steps: [], links: [] }),
+        react: WelcomeUserEmail(),
       });
 
       // Log any errors that occur during email sending
       if (error) {
+        console.error("Error sending email", error);
         Sentry.captureException(
           error instanceof Error ? error : new Error(String(error)),
         );
