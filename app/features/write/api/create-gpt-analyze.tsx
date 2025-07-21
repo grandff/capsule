@@ -1,10 +1,14 @@
 import type { LoaderFunctionArgs } from "react-router";
 
+import { DateTime } from "luxon";
+
 import makeServerClient from "~/core/lib/supa-client.server";
+import { getUserInterestKeywords } from "~/features/trend/queries";
 import { getUserList } from "~/features/users/queries";
 import { validatePerplexityCronSecret } from "~/utils/cron-validation";
 import { gptCompletion } from "~/utils/gpt-util";
 
+import { saveGptAnalysisResult } from "../mutations";
 import { getRecentThreads } from "../queries";
 import { getAnalysisPrompt } from "./prompts";
 
@@ -49,23 +53,42 @@ export async function loader({ request }: LoaderFunctionArgs) {
         continue;
       }
 
-      // 3-2. 프롬프트 텍스트 치환
+      // 3-2. 사용자 관심 키워드 조회
+      const userInterestKeywords = await getUserInterestKeywords(
+        client,
+        user.profile_id,
+      );
+      const keywordList =
+        userInterestKeywords.length > 0
+          ? userInterestKeywords.map((k) => k.keyword).join(", ")
+          : "설정된 키워드 없음";
+
+      // 3-3. 프롬프트 텍스트 치환
       let prompt = getAnalysisPrompt();
 
-      // text1 ~ text5 치환
+      // text1 ~ text3 치환
       for (let i = 1; i <= 3; i++) {
         const threadIndex = i - 1;
         const threadText = recentThreads[threadIndex]?.thread || "데이터없음";
         prompt = prompt.replace(`{{text${i}}}`, threadText);
       }
 
-      // 3-3. GPT 호출
+      // keyword-list 치환
+      prompt = prompt.replace("{{keyword-list}}", keywordList);
+
+      // 3-4. GPT 호출
       console.log(prompt);
       console.log(`사용자 ${user.profile_id} 분석 시작...`);
       const analysisResult = await gptCompletion(prompt);
 
       if (analysisResult) {
         console.log(`사용자 ${user.profile_id} 분석 결과:`, analysisResult);
+        const saveResult = await saveGptAnalysisResult(client, {
+          profile_id: user.profile_id,
+          analysis_text: analysisResult || "",
+          analysis_date: DateTime.now().toISO(),
+          is_helpful: null,
+        });
       } else {
         console.log(`사용자 ${user.profile_id}: GPT 분석 실패`);
       }

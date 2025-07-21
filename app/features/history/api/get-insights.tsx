@@ -78,6 +78,7 @@ export async function action({ request }: ActionFunctionArgs) {
     throw new Response("Unauthorized", { status: 401 });
   }
   const userId = user.id;
+  console.log(`get-insights: getThreadsAccessToken 호출`);
   const { accessToken, expiresAt } = await getThreadsAccessToken(
     client,
     userId,

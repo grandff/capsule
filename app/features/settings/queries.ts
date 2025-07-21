@@ -84,22 +84,16 @@ export async function getConnectionStatus(
   };
 }
 
-// TODO 토큰 만료 확인
-
 // 현재 설정 정보 확인
 export async function getSetting(
   client: SupabaseClient<Database>,
   userId: string,
 ) {
-  console.log("getSetting 호출 - userId:", userId);
-
   const { data, error } = await client
     .from("setting")
     .select("theme, font_size, color_blind_mode")
     .eq("profile_id", userId)
     .single();
-
-  console.log("데이터베이스 조회 결과:", { data, error });
 
   if (error) {
     console.log("설정 조회 오류:", error);

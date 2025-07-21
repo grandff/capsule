@@ -3,6 +3,8 @@ import type { Database } from "database.types";
 
 import type { NewThreadMedia } from "./schema";
 
+import type { NewGptAnalysisResult } from "~/features/users/schema";
+
 // 키워드들 일괄 저장 또는 조회
 async function saveOrGetKeywords(
   client: SupabaseClient<Database>,
@@ -290,4 +292,29 @@ export async function updateThreadFollowersCount(
   }
 
   console.log(`Thread ${threadId}의 팔로워 수 업데이트: ${followersCount}`);
+}
+
+// GPT 분석 결과 저장
+export async function saveGptAnalysisResult(
+  client: SupabaseClient<Database>,
+  analysisData: {
+    profile_id: string;
+    analysis_text: string;
+    analysis_date?: string;
+    is_helpful?: boolean | null;
+  },
+) {
+  const { data, error } = await client
+    .from("gpt_analysis_results")
+    .insert(analysisData)
+    .select("analysis_id")
+    .single();
+
+  if (error) {
+    console.error("Error saving GPT analysis result:", error);
+    throw error;
+  }
+
+  console.log(`GPT 분석 결과 저장 완료: analysis_id ${data.analysis_id}`);
+  return data.analysis_id;
 }

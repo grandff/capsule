@@ -1,9 +1,12 @@
-import { Check, Copy, Sparkles } from "lucide-react";
+import { BorderBeam } from "components/magicui/border-beam";
+import { Check, Copy, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useState } from "react";
+import { useFetcher } from "react-router";
 import { toast } from "sonner";
 
+import { RECOMMEND_TEXT } from "~/constants";
 import { Button } from "~/core/components/ui/button";
-import { Card, CardContent } from "~/core/components/ui/card";
+import { Card, CardContent, CardHeader } from "~/core/components/ui/card";
 
 interface AIRecommendationSectionProps {
   recommendation?: string;
@@ -17,6 +20,8 @@ export function AIRecommendationSection({
   onUseRecommendation,
 }: AIRecommendationSectionProps) {
   const [copied, setCopied] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const fetcher = useFetcher();
 
   const handleCopy = async () => {
     if (!recommendation) return;
@@ -40,6 +45,15 @@ export function AIRecommendationSection({
     }
   };
 
+  const handleFeedback = (isHelpful: boolean) => {
+    fetcher.submit(
+      { isHelpful: isHelpful.toString() },
+      { method: "post", action: "/dashboard/write/feedback" },
+    );
+    setFeedbackGiven(true);
+    toast.success("피드백을 보내주셔서 감사합니다!");
+  };
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-4">
@@ -57,77 +71,36 @@ export function AIRecommendationSection({
     );
   }
 
-  if (!recommendation) {
-    return (
-      <div className="mx-auto max-w-4xl px-6 py-4">
-        <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center space-x-2">
-              <Sparkles className="h-5 w-5 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                AI 추천 기능을 준비 중입니다
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-4xl px-6 py-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          이렇게 써보면 어떨까요?
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          AI가 오늘의 트렌드와 사용자 데이터를 분석해서 추천한 내용입니다
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl px-6 py-2">
+      <Card className="relative gap-3 border border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 shadow-sm dark:border-green-800 dark:from-green-950/30 dark:via-emerald-950/30 dark:to-teal-950/30">
+        <BorderBeam
+          size={40}
+          duration={4}
+          colorFrom="#10b981"
+          colorTo="#059669"
+          className="rounded-lg"
+        />
 
-      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:border-blue-800 dark:from-blue-950/20 dark:to-indigo-950/20">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="mb-3 flex items-center space-x-2">
-                <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-medium tracking-wide text-blue-600 uppercase dark:text-blue-400">
-                  AI 추천
-                </span>
-              </div>
-              <p className="leading-relaxed whitespace-pre-wrap text-gray-800 dark:text-gray-200">
-                {recommendation}
-              </p>
+        {/* 헤더 */}
+        <CardHeader className="pb-0">
+          <div className="flex items-center space-x-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-green-500 to-emerald-500">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                오늘은 이렇게 써보는게 어떨까요?
+              </h3>
             </div>
           </div>
+        </CardHeader>
 
-          <div className="mt-4 flex items-center justify-end space-x-2 border-t border-blue-200 pt-4 dark:border-blue-800">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopy}
-              className="text-xs"
-            >
-              {copied ? (
-                <>
-                  <Check className="mr-1 h-3 w-3" />
-                  복사됨
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-1 h-3 w-3" />
-                  복사하기
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleUseRecommendation}
-              className="bg-blue-600 text-xs hover:bg-blue-700"
-            >
-              이 내용으로 시작하기
-            </Button>
-          </div>
+        {/* 바디 */}
+        <CardContent className="pt-1 pb-2">
+          <p className="text-sm leading-5 text-gray-700 dark:text-gray-300">
+            {recommendation}
+          </p>
         </CardContent>
       </Card>
     </div>

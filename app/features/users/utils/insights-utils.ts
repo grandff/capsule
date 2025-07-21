@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getUnixTimestampByDayDiff } from "~/features/history/utils/date-utils";
 import { getThreadsAccessToken } from "~/features/settings/queries";
 
 import { getSnsProfiles } from "../queries";
@@ -23,7 +24,7 @@ interface InsightData {
   id: string;
 }
 
-interface UserInsightsResponse {
+export interface UserInsightsResponse {
   data: InsightData[];
   paging?: {
     previous?: string;

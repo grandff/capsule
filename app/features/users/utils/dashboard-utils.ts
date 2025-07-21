@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 export interface DashboardStats {
   averages: {
     posts: number;
@@ -14,7 +16,6 @@ export interface DailyStat {
   date: string;
   posts: number;
   total_likes: number;
-  total_followers: number;
   total_shares: number;
   total_comments: number;
   total_views: number;
@@ -33,19 +34,17 @@ export const DEFAULT_DASHBOARD_STATS: DashboardStats = {
 };
 
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("ko-KR", {
-    month: "short",
-    day: "numeric",
-  });
+  const date = DateTime.fromISO(dateString, { zone: "Asia/Seoul" });
+  return date.toFormat("M월 d일");
 }
 
 export function getStatIconColor(statType: string): string {
   const colors = {
-    posts: "text-blue-600 dark:text-blue-400",
+    posts: "text-indigo-600 dark:text-indigo-400",
     likes: "text-red-600 dark:text-red-400",
     followers: "text-green-600 dark:text-green-400",
     shares: "text-purple-600 dark:text-purple-400",
-    comments: "text-orange-600 dark:text-orange-400",
+    comments: "text-green-600 dark:text-green-400",
     views: "text-blue-600 dark:text-blue-400",
   };
 

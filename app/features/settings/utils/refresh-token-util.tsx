@@ -27,7 +27,6 @@ export async function refreshToken(
   if (cached) {
     const now = Date.now();
     if (now - cached.timestamp < CACHE_DURATION) {
-      console.log("토큰 재발급 캐시 히트:", userId);
       return { success: false, error: "Already refreshed today" };
     }
   }

@@ -254,9 +254,9 @@ export default function WriteResult() {
         <div className="w-full max-w-4xl space-y-6">
           {/* 결과 제목 */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold">홍보글 생성 완료!</h1>
+            <h1 className="text-3xl font-bold">오늘의 이야기 생성 완료!</h1>
             <p className="text-muted-foreground mt-2">
-              입력하신 내용을 바탕으로 홍보글을 생성했습니다.
+              입력하신 내용을 바탕으로 오늘의 이야기를 생성했어요.
             </p>
           </div>
 

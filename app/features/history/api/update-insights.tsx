@@ -5,12 +5,21 @@ import type {
   ThreadsInsightsResponse,
 } from "../types/insights";
 
+import { DateTime } from "luxon";
 import { data } from "react-router";
 
 import { CACHE_TTL, cacheKeys, memoryCache } from "~/core/lib/cache";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getThreadsAccessToken } from "~/features/settings/queries";
-import { saveUserInsights } from "~/features/users/mutations";
+import {
+  getFollowersCount,
+  saveUserInsights,
+} from "~/features/users/mutations";
+import { getSnsProfiles } from "~/features/users/queries";
+import type { UserInsightsResponse } from "~/features/users/utils/insights-utils";
+import { updateThreadFollowersCount } from "~/features/write/mutations";
+
+import { getUnixTimestampByDayDiff } from "../utils/date-utils";
 
 const THREAD_END_POINT_URL = "https://graph.threads.net/v1.0";
 
@@ -69,6 +78,10 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!threadId) {
     return data({ error: "threadId is required" }, { status: 400 });
   }
+  const threadIdNum = Number(threadId);
+  if (isNaN(threadIdNum)) {
+    return data({ error: "threadId must be a number" }, { status: 400 });
+  }
 
   // get access token from user id
   const [client, headers] = makeServerClient(request);
@@ -80,10 +93,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const userId = user.id;
+
   const { accessToken, expiresAt } = await getThreadsAccessToken(
     client,
     userId,
   );
+  const snsProfile = await getSnsProfiles(client, { userId });
   if (!accessToken || !expiresAt) {
     throw new Response("Unauthorized", { status: 401 });
   }
@@ -93,7 +108,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const { data: thread, error: threadError } = await client
       .from("threads")
       .select("thread_id, result_id, profile_id")
-      .eq("thread_id", parseInt(threadId, 10))
+      .eq("thread_id", threadIdNum)
       .eq("profile_id", userId)
       .single();
 
@@ -126,6 +141,8 @@ export async function action({ request }: ActionFunctionArgs) {
       },
     );
 
+    console.log("Threads Insights API response:", response);
+
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Threads Insights API error:", errorData);
@@ -139,7 +156,7 @@ export async function action({ request }: ActionFunctionArgs) {
             result_id: "DELETED",
             send_flag: false,
           })
-          .eq("thread_id", parseInt(threadId, 10));
+          .eq("thread_id", threadIdNum);
 
         return data(
           {
@@ -163,97 +180,70 @@ export async function action({ request }: ActionFunctionArgs) {
     const insightsData: ThreadsInsightsResponse = await response.json();
     console.log("Threads Insights API response:", insightsData);
 
-    // 4. insight 데이터 파싱
+    // 4. insight 데이터 파싱 및 업데이트
     const parsedInsights: ParsedInsights = parseInsightsData(insightsData);
 
-    // 5. user_insights 테이블에만 저장 (threads 테이블은 업데이트하지 않음)
-    try {
-      // 시계열 데이터 구성
-      const timeseriesData = [
-        {
-          name: "likes",
-          period: "day",
-          values: [
-            { value: parsedInsights.likes, end_time: new Date().toISOString() },
-          ],
-        },
-        {
-          name: "replies",
-          period: "day",
-          values: [
-            {
-              value: parsedInsights.replies,
-              end_time: new Date().toISOString(),
-            },
-          ],
-        },
-        {
-          name: "views",
-          period: "day",
-          values: [
-            { value: parsedInsights.views, end_time: new Date().toISOString() },
-          ],
-        },
-        {
-          name: "reposts",
-          period: "day",
-          values: [
-            {
-              value: parsedInsights.reposts,
-              end_time: new Date().toISOString(),
-            },
-          ],
-        },
-        {
-          name: "quotes",
-          period: "day",
-          values: [
-            {
-              value: parsedInsights.quotes,
-              end_time: new Date().toISOString(),
-            },
-          ],
-        },
-        {
-          name: "shares",
-          period: "day",
-          values: [
-            {
-              value: parsedInsights.shares,
-              end_time: new Date().toISOString(),
-            },
-          ],
-        },
-      ];
+    const updateData = {
+      like_cnt: parsedInsights.likes,
+      comment_cnt: parsedInsights.replies,
+      view_cnt: parsedInsights.views,
+      share_cnt: parsedInsights.total_shares,
+      updated_at: DateTime.now().toISO(),
+    };
 
-      // user_insights에 저장
-      await saveUserInsights(
-        client,
-        userId,
-        parseInt(threadId, 10),
-        timeseriesData,
-      );
+    // 5베이스 업데이트
+    const { error: updateError } = await client
+      .from("threads")
+      .update(updateData)
+      .eq("thread_id", threadIdNum);
 
-      console.log("User insights saved successfully");
-    } catch (insightsError) {
-      console.error("Error saving user insights:", insightsError);
+    if (updateError) {
+      console.error("Error updating thread insights:", updateError);
       return data(
         {
-          error: "Failed to save user insights",
-          details: insightsError,
+          error: "Failed to update database",
+          details: updateError,
         },
         { status: 500 },
       );
     }
 
-    // 성공 시 관련 캐시 무효화
-    memoryCache.deletePattern(`thread:${threadId}`);
-    memoryCache.delete(cacheKeys.insights(parseInt(threadId, 10)));
+    // 사용자 인사이트 조회
+    try {
+      // 모든 지표를 한 번에 가져오기
+      const params = new URLSearchParams({
+        metric: "views,likes,replies,reposts,quotes,followers_count",
+        access_token: accessToken,
+      });
+
+      const response = await fetch(
+        `${THREAD_END_POINT_URL}/${snsProfile?.user_id}/threads_insights?${params.toString()}`,
+        {
+          method: "GET",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Insights API failed: ${response.status}`);
+      }
+
+      const insightsData = (await response.json()) as UserInsightsResponse;
+      if (insightsData) {
+        // 모든 인사이트 데이터 저장 (시계열 + 총계)
+        await saveUserInsights(client, user.id, threadIdNum, insightsData.data);
+
+        console.log("백그라운드 사용자 인사이트 저장 완료");
+      }
+
+      console.log("User Insights:", insightsData);
+    } catch (error) {
+      console.error("Error fetching user insights:", error);
+    }
 
     return data(
       {
         success: true,
-        insights: parsedInsights,
+        insights: updateData,
         threadStatus: "active",
       },
       { status: 200 },

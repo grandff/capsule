@@ -86,14 +86,12 @@ export async function getThreadsList(
 // 글 상세 조회
 export async function getThreadDetail(
   client: SupabaseClient<Database>,
-  userId: string,
   threadId: string,
 ) {
-  const threadIdNum = parseInt(threadId, 10);
+  const threadIdNum = Number(threadId);
   if (isNaN(threadIdNum)) {
     throw new Error("Invalid thread ID");
   }
-
   const { data: thread, error } = await client
     .from("threads")
     .select(
@@ -122,58 +120,47 @@ export async function getThreadDetail(
       )
     `,
     )
-    .eq("profile_id", userId)
     .eq("thread_id", threadIdNum)
     .single();
-
   if (error) {
     console.error("Error fetching thread detail:", error);
     throw error;
   }
-
   return thread;
 }
 
 // 팔로워 수 증감 계산
 export async function getFollowerChange(
   client: SupabaseClient<Database>,
-  userId: string,
   threadId: string,
 ) {
-  const threadIdNum = parseInt(threadId, 10);
+  const threadIdNum = Number(threadId);
   if (isNaN(threadIdNum)) {
     throw new Error("Invalid thread ID");
   }
-
   // 1. 게시글 작성 시점의 팔로워 수 (threads 테이블의 now_follow_cnt - 기준점)
   const { data: thread, error: threadError } = await client
     .from("threads")
-    .select("now_follow_cnt, created_at")
-    .eq("profile_id", userId)
+    .select("profile_id, now_follow_cnt, created_at")
     .eq("thread_id", threadIdNum)
     .single();
-
   if (threadError || !thread) {
     throw new Error("Thread not found");
   }
-
   // 2. 현재 팔로워 수 (user_insights의 최신 followers_count)
   const { data: currentInsight, error: currentError } = await client
     .from("user_insights")
     .select("value")
-    .eq("profile_id", userId)
+    .eq("profile_id", thread.profile_id!)
     .eq("metric_name", "followers_count")
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
-
   // 현재 팔로워 수가 없으면 게시글 작성 시점의 팔로워 수 사용
   const currentFollowers = currentInsight?.value || thread.now_follow_cnt;
   const baselineFollowers = thread.now_follow_cnt; // 게시글 작성 시점의 팔로워 수
-
   // 3. 증감 계산
   const followerChange = currentFollowers - baselineFollowers;
-
   return {
     currentFollowers,
     baselineFollowers,

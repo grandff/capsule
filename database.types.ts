@@ -131,6 +131,83 @@ export type Database = {
         }
         Relationships: []
       }
+      followers_history: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["followers_event_type"] | null
+          follower_count: number
+          history_id: number
+          profile_id: string
+          thread_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_type?:
+            | Database["public"]["Enums"]["followers_event_type"]
+            | null
+          follower_count: number
+          history_id?: never
+          profile_id: string
+          thread_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_type?:
+            | Database["public"]["Enums"]["followers_event_type"]
+            | null
+          follower_count?: number
+          history_id?: never
+          profile_id?: string
+          thread_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followers_history_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
+      gpt_analysis_results: {
+        Row: {
+          analysis_date: string
+          analysis_id: number
+          analysis_text: string
+          created_at: string
+          is_helpful: boolean | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_date?: string
+          analysis_id?: never
+          analysis_text: string
+          created_at?: string
+          is_helpful?: boolean | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_date?: string
+          analysis_id?: never
+          analysis_text?: string
+          created_at?: string
+          is_helpful?: boolean | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpt_analysis_results_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       keywords: {
         Row: {
           created_at: string
@@ -739,6 +816,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      followers_event_type: "upload" | "refresh" | "daily_snapshot"
       media_type: "image" | "video"
       notification_type: "thread" | "X" | "following" | "challenge"
       property_type: "mood" | "work"
@@ -871,6 +949,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      followers_event_type: ["upload", "refresh", "daily_snapshot"],
       media_type: ["image", "video"],
       notification_type: ["thread", "X", "following", "challenge"],
       property_type: ["mood", "work"],

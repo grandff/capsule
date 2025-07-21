@@ -65,9 +65,8 @@ export function InterestKeywordsSection({
           관심 키워드 설정
         </CardTitle>
         <p className="text-muted-foreground text-sm">
-          관심 있는 키워드를 설정하면 매일 아침 해당 키워드 기반으로 트렌드를
-          분석해드립니다. 평소 자주 사용하는 단어나 관심 있는 주제를
-          입력해주세요.
+          관심 있는 키워드를 설정하면 매주 월요일 해당 키워드 기반으로 트렌드를
+          분석해드려요. 평소 자주 사용하는 단어나 관심 있는 주제를 입력해주세요.
         </p>
       </CardHeader>
       <CardContent>

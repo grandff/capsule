@@ -1,13 +1,6 @@
 import type { DailyStat } from "../utils/dashboard-utils";
 
-import {
-  Heart,
-  MessageCircle,
-  Repeat,
-  Share2,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { Heart, MessageCircle, Play, Repeat } from "lucide-react";
 
 import { Badge } from "~/core/components/ui/badge";
 
@@ -42,33 +35,30 @@ export function DailyStats({ dailyStats }: DailyStatsProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="flex items-center gap-1">
-              <Heart className="h-4 w-4 text-red-500" />
-              <span className="text-sm">{stat.total_likes}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4 text-green-500" />
-              <span className="text-sm">+{stat.total_followers}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-              <span className="text-sm text-green-600 dark:text-green-400">
-                {/* FIXME: 팔로워 증가율 계산을 위해서는 이전 날짜의 팔로워 수가 필요합니다 */}
-                N/A
+              <Play className="h-4 w-4 text-blue-500" />
+              <span className="text-sm">
+                {stat.total_views.toLocaleString()}
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <Share2 className="h-4 w-4 text-purple-500" />
-              <span className="text-sm">{stat.total_shares}</span>
+              <Heart className="h-4 w-4 text-red-500" />
+              <span className="text-sm">
+                {stat.total_likes.toLocaleString()}
+              </span>
             </div>
             <div className="flex items-center gap-1">
-              <Repeat className="h-4 w-4 text-orange-500" />
-              <span className="text-sm">{stat.total_comments}</span>
+              <MessageCircle className="h-4 w-4 text-green-500" />
+              <span className="text-sm">
+                {stat.total_comments.toLocaleString()}
+              </span>
             </div>
             <div className="flex items-center gap-1">
-              <MessageCircle className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">{stat.total_views}</span>
+              <Repeat className="h-4 w-4 text-purple-500" />
+              <span className="text-sm">
+                {stat.total_shares.toLocaleString()}
+              </span>
             </div>
           </div>
         </div>

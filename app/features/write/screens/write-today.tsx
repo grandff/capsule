@@ -4,12 +4,16 @@ import type { Route } from "./+types/write-today";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { RECOMMEND_TEXT } from "~/constants";
+import makeServerClient from "~/core/lib/supa-client.server";
+
 import { AdvancedSettingsSection } from "../components/advanced-settings-section";
 import { AIRecommendationSection } from "../components/ai-recommendation-section";
 import { ProgressSection } from "../components/progress-section";
 import { StyleSelectionSection } from "../components/style-selection-section";
 import { TextInputSection } from "../components/text-input-section";
 import { TokenAlertDialog } from "../components/token-alert-dialog";
+import { getLatestGptAnalysisResult } from "../queries";
 import { createPromotion, simulateProgress } from "../utils/promotion-utils";
 import { checkThreadsToken } from "../utils/token-utils";
 import {
@@ -21,7 +25,61 @@ export const meta: Route.MetaFunction = () => {
   return [{ title: `Today | ${import.meta.env.VITE_APP_NAME}` }];
 };
 
-export default function WriteToday() {
+export async function loader({ request }: Route.LoaderArgs) {
+  try {
+    const [client] = makeServerClient(request);
+
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+    if (!user) {
+      throw new Response("Unauthorized", { status: 401 });
+    }
+
+    const analysisResult = await getLatestGptAnalysisResult(client, user.id);
+
+    // 데이터가 없으면 랜덤 추천 텍스트 사용
+    const recommendation =
+      analysisResult?.analysis_text ||
+      RECOMMEND_TEXT[Math.floor(Math.random() * RECOMMEND_TEXT.length)];
+
+    return { recommendation };
+  } catch (error) {
+    console.error("AI 추천 데이터 로드 중 오류:", error);
+    // 오류 시에도 랜덤 추천 텍스트 사용
+    const recommendation =
+      RECOMMEND_TEXT[Math.floor(Math.random() * RECOMMEND_TEXT.length)];
+    return { recommendation };
+  }
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
+  const isHelpful = formData.get("isHelpful") === "true";
+
+  try {
+    const [client] = makeServerClient(request);
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      throw new Response("Unauthorized", { status: 401 });
+    }
+
+    // TODO: 피드백을 데이터베이스에 저장하는 로직 추가
+    console.log(
+      `사용자 ${user.id}의 피드백: ${isHelpful ? "도움됨" : "도움안됨"}`,
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("피드백 저장 중 오류:", error);
+    return { success: false };
+  }
+}
+
+export default function WriteToday({ loaderData }: Route.ComponentProps) {
   const [text, setText] = useState("");
   const [showMoodSelection, setShowMoodSelection] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -38,7 +96,9 @@ export default function WriteToday() {
   const [moodButtonText, setMoodButtonText] = useState("홍보글 설정하기");
   const [showTokenAlert, setShowTokenAlert] = useState(false);
   const [tokenAlertMessage, setTokenAlertMessage] = useState("");
-  const [aiRecommendation, setAiRecommendation] = useState<string>("");
+  const [aiRecommendation, setAiRecommendation] = useState<string>(
+    loaderData.recommendation || "",
+  );
   const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
 
   const navigate = useNavigate();
@@ -185,11 +245,11 @@ export default function WriteToday() {
       </div>
 
       {/* AI 추천 영역 */}
-      {/* <AIRecommendationSection
+      <AIRecommendationSection
         recommendation={aiRecommendation}
         isLoading={isLoadingRecommendation}
         onUseRecommendation={handleUseRecommendation}
-      /> */}
+      />
 
       {/* 텍스트 입력 영역 */}
       <TextInputSection

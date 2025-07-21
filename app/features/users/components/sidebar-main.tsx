@@ -15,7 +15,9 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "~/core/components/ui/sidebar";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 
 export default function SidebarMain({
   items,
@@ -35,6 +37,14 @@ export default function SidebarMain({
     disabled?: boolean;
   }[];
 }) {
+  const { setOpenMobile } = useSidebar();
+  const isMobile = useIsMobile();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
   return (
     <SidebarGroup>
       {/* <SidebarGroupLabel>Platform</SidebarGroupLabel> */}
@@ -74,7 +84,11 @@ export default function SidebarMain({
                             )}
                           </span>
                         ) : (
-                          <Link to={subItem.url} className="hover:underline">
+                          <Link
+                            to={subItem.url}
+                            className="hover:underline"
+                            onClick={handleLinkClick}
+                          >
                             <span>{subItem.title}</span>
                             {subItem.comingSoon && (
                               <span className="ml-2 rounded bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600">

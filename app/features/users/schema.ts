@@ -19,12 +19,17 @@ import {
 } from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
-import { TARGET_TYPES } from "~/constants";
+import { FOLLOWERS_EVENT_TYPES, TARGET_TYPES } from "~/constants";
 import { timestamps } from "~/core/db/helpers.server";
 
 export const targetType = pgEnum(
   "target_type",
   TARGET_TYPES.map((type) => type.value) as [string, ...string[]],
+);
+
+export const followersEventType = pgEnum(
+  "followers_event_type",
+  FOLLOWERS_EVENT_TYPES.map((type) => type.value) as [string, ...string[]],
 );
 /**
  * Profiles Table
@@ -332,6 +337,114 @@ export const userInterestKeywords = pgTable(
   ],
 );
 
+// GPT 분석 결과 테이블
+export const gptAnalysisResults = pgTable(
+  "gpt_analysis_results",
+  {
+    analysis_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    analysis_text: text().notNull(), // GPT 분석 결과 텍스트
+    analysis_date: timestamp().notNull().defaultNow(), // 분석 날짜
+    is_helpful: boolean(), // 도움이 됐는지 피드백 (nullable)
+    created_at: timestamp().notNull().defaultNow(),
+    updated_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own analysis results
+    pgPolicy("select-gpt-analysis-results-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own analysis results
+    pgPolicy("insert-gpt-analysis-results-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own analysis results
+    pgPolicy("update-gpt-analysis-results-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own analysis results
+    pgPolicy("delete-gpt-analysis-results-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // 인덱스들
+    index("profile_analysis_date_idx").on(
+      table.profile_id,
+      table.analysis_date,
+    ),
+    index("analysis_date_idx").on(table.analysis_date),
+  ],
+);
+
+// 팔로워 이력 테이블 (followers_history)
+export const followersHistory = pgTable(
+  "followers_history",
+  {
+    history_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    thread_id: bigint({ mode: "number" }), // nullable, threads 테이블 참조는 write/schema.ts에서 처리
+    follower_count: integer().notNull(),
+    event_type: followersEventType(),
+    created_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own follower history
+    pgPolicy("select-followers-history-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own follower history
+    pgPolicy("insert-followers-history-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own follower history
+    pgPolicy("update-followers-history-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own follower history
+    pgPolicy("delete-followers-history-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // 인덱스들
+    index("profile_id_idx").on(table.profile_id),
+    index("thread_id_idx").on(table.thread_id),
+    index("created_at_idx").on(table.created_at),
+    index("event_type_idx").on(table.event_type),
+  ],
+);
+
 // 테이블 타입 정의
 export type UserInsight = typeof userInsights.$inferSelect;
 export type NewUserInsight = typeof userInsights.$inferInsert;
@@ -339,3 +452,7 @@ export type UserMetric = typeof userMetrics.$inferSelect;
 export type NewUserMetric = typeof userMetrics.$inferInsert;
 export type UserInterestKeyword = typeof userInterestKeywords.$inferSelect;
 export type NewUserInterestKeyword = typeof userInterestKeywords.$inferInsert;
+export type GptAnalysisResult = typeof gptAnalysisResults.$inferSelect;
+export type NewGptAnalysisResult = typeof gptAnalysisResults.$inferInsert;
+export type FollowerHistory = typeof followersHistory.$inferSelect;
+export type NewFollowerHistory = typeof followersHistory.$inferInsert;

@@ -7,6 +7,7 @@ import {
   Repeat,
   Users,
 } from "lucide-react";
+import { useFetcher } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -15,12 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "~/core/components/ui/tooltip";
 
 interface ThreadStatsProps {
   thread: any;
@@ -32,19 +27,14 @@ interface ThreadStatsProps {
     isNegative: boolean;
     isNeutral: boolean;
   } | null;
-  onUpdateInsights: () => Promise<void>;
-  isUpdating: boolean;
+  isUpdating?: boolean;
 }
 
 export function ThreadStats({
   thread,
   followerChange,
-  onUpdateInsights,
   isUpdating,
 }: ThreadStatsProps) {
-  const isDeleted = thread.result_id === "DELETED";
-  const isDisabled = isUpdating || isDeleted;
-
   return (
     <Card className="dark:border-gray-700 dark:bg-gray-800">
       <CardHeader>
@@ -53,29 +43,22 @@ export function ThreadStats({
             <BarChart3 className="h-5 w-5" />
             성과 통계
           </CardTitle>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={onUpdateInsights}
-                  disabled={isDisabled}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`}
-                  />
-                  {isUpdating ? "업데이트 중..." : "새로고침"}
-                </Button>
-              </TooltipTrigger>
-              {isDeleted && (
-                <TooltipContent>
-                  <p>삭제된 게시글은 인사이트를 업데이트할 수 없습니다.</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          {/* fetcher.Form으로 Button을 감싼다 */}
+          {/* <fetcher.Form method="post" action="/api/history/update-insights"> */}
+          {/* <input type="hidden" name="threadId" value={thread.thread_id} /> */}
+          <Button
+            type="submit"
+            size="sm"
+            variant="outline"
+            disabled={isUpdating}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`}
+            />
+            {isUpdating ? "새로고침 중..." : "새로고침"}
+          </Button>
+          {/* </fetcher.Form> */}
         </div>
       </CardHeader>
       <CardContent>

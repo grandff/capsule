@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
+import { redirect } from "react-router";
+
 // 사용자 인사이트 데이터 저장 (통합)
 export async function saveUserInsights(
   client: SupabaseClient<Database>,
@@ -58,16 +60,36 @@ export async function saveUserInsights(
   });
 
   if (insightsToInsert.length > 0) {
-    const { error } = await client
-      .from("user_insights")
-      .insert(insightsToInsert);
+    try {
+      // 1. 기존 데이터 삭제 (같은 profile_id, thread_id, metric_name, metric_type, period 조합)
+      console.log("profileId", profileId);
+      console.log("threadId", threadId);
+      const { error: deleteError } = await client
+        .from("user_insights")
+        .delete()
+        .eq("profile_id", profileId)
+        .eq("thread_id", threadId);
 
-    if (error) {
-      console.error("Error saving user insights:", error);
+      if (deleteError) {
+        console.error("Error deleting existing user insights:", deleteError);
+        throw deleteError;
+      }
+
+      //2데이터 삽입
+      const { error: insertError } = await client
+        .from("user_insights")
+        .insert(insightsToInsert);
+
+      if (insertError) {
+        console.error("Error inserting user insights:", insertError);
+        throw insertError;
+      }
+
+      console.log(`${insightsToInsert.length}개의 인사이트 데이터 저장 완료`);
+    } catch (error) {
+      console.error("Error in saveUserInsights:", error);
       throw error;
     }
-
-    console.log(`${insightsToInsert.length}개의 인사이트 데이터 저장 완료`);
   }
 }
 
@@ -124,23 +146,14 @@ export async function deleteUserAccount(
     const { error: profilesError } = await client
       .from("profiles")
       .delete()
-      .eq("id", userId);
+      .eq("profile_id", userId);
 
     if (profilesError) {
       console.error("Error deleting profile:", profilesError);
       throw profilesError;
     }
 
-    // 2. Supabase Auth에서 사용자 삭제
-    const { error: authError } = await client.auth.admin.deleteUser(userId);
-
-    if (authError) {
-      console.error("Error deleting auth user:", authError);
-      throw authError;
-    }
-
     console.log("User account deleted successfully");
-    return { success: true };
   } catch (error) {
     console.error("Error in deleteUserAccount:", error);
     throw error;

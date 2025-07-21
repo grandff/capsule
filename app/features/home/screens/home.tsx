@@ -229,17 +229,22 @@ export default function Home() {
 
       <span>
         <h1 className="justify-center text-4xl font-extrabold tracking-tight lg:text-6xl">
-          브랜드 홍보, 어렵고 귀찮았죠?
+          <span className="block lg:inline">브랜드 홍보,&nbsp;</span>
+          <span className="block lg:inline">어렵고 귀찮았죠?</span>
         </h1>
-        <h1 className="flex justify-center text-4xl font-extrabold tracking-tight lg:text-6xl">
-          <SparklesText className="inline-block">Capsule</SparklesText>이 대신
-          써줄게요.
+        <h1 className="text-left text-4xl font-extrabold tracking-tight lg:flex lg:justify-center lg:text-6xl">
+          <div className="block lg:inline">
+            <SparklesText className="inline-block">Capsule</SparklesText>
+            이&nbsp;
+          </div>
+          <div className="block lg:inline">대신&nbsp;써줄게요.</div>
         </h1>
       </span>
 
       {/* Subtitle */}
       <h2 className="mt-5 text-2xl text-gray-500 dark:text-gray-300">
-        3번의 클릭이면, 글쓰기부터 업로드까지 끝!
+        <span className="block lg:inline">3번의 클릭이면,&nbsp;</span>
+        <span className="block lg:inline">글쓰기부터 업로드까지 끝!</span>
       </h2>
 
       {/* 시작 버튼 */}
@@ -467,26 +472,18 @@ export default function Home() {
         }`}
       >
         <h2 className="mb-12 text-center text-3xl font-bold">
-          복잡한 광고, 이제는 쉽게 해결해드릴게요.
+          <span className="block lg:inline">이제 쉽고 간편하게&nbsp;</span>
+          <span className="block lg:inline">내 브랜드를 홍보해보세요.</span>
         </h2>
         <div className="space-y-16">
           {howToUse.map((item, index) => (
             <div
               key={index}
-              className={`flex items-center gap-12 ${
-                index % 2 === 1 ? "flex-row-reverse" : ""
+              className={`flex flex-col items-center gap-8 lg:flex-row lg:gap-12 ${
+                index % 2 === 1 ? "lg:flex-row-reverse" : ""
               }`}
             >
-              <div className="flex-1">
-                <h3 className="mb-4 text-2xl font-bold">{item.title}</h3>
-                <p className="text-grey-600 text-lg leading-relaxed dark:text-gray-400">
-                  {item.description}
-                </p>
-                <p className="text-grey-600 text-lg leading-relaxed dark:text-gray-400">
-                  {item.description2}
-                </p>
-              </div>
-              <div className="flex-1">
+              <div className="order-1 w-full lg:order-none lg:flex-1">
                 <div className="flex aspect-video items-center justify-center overflow-hidden rounded-xl">
                   <img
                     src={item.image}
@@ -494,6 +491,15 @@ export default function Home() {
                     className="h-full w-full object-cover"
                   />
                 </div>
+              </div>
+              <div className="order-2 w-full text-center lg:order-none lg:flex-1 lg:text-left">
+                <h3 className="mb-4 text-2xl font-bold">{item.title}</h3>
+                <p className="text-grey-600 text-lg leading-relaxed dark:text-gray-400">
+                  {item.description}
+                </p>
+                <p className="text-grey-600 text-lg leading-relaxed dark:text-gray-400">
+                  {item.description2}
+                </p>
               </div>
             </div>
           ))}

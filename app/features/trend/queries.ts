@@ -129,3 +129,53 @@ export async function isKeywordInUserInterests(
     throw error;
   }
 }
+
+/**
+ * 이번주 트렌드 키워드를 조회합니다.
+ */
+export async function getThisWeekTrends(
+  client: SupabaseClient,
+): Promise<TrendKeyword[]> {
+  try {
+    // 이번주 시작일과 종료일 계산 (월요일부터 일요일까지)
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1); // 월요일
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // 일요일
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const { data, error } = await client
+      .from("trend_keywords")
+      .select(
+        `
+        trend_keyword_id,
+        trend_id,
+        keyword,
+        rank,
+        description,
+        created_at,
+        updated_at,
+        trends!inner (
+          trend_date
+        )
+      `,
+      )
+      .gte("trends.trend_date", startOfWeek.toISOString().split("T")[0])
+      .lte("trends.trend_date", endOfWeek.toISOString().split("T")[0])
+      .order("rank", { ascending: true })
+      .limit(10);
+
+    if (error) {
+      console.error("Error fetching this week trends:", error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in getThisWeekTrends:", error);
+    throw error;
+  }
+}

@@ -1,13 +1,13 @@
 import { Calendar } from "lucide-react";
+import { DateTime } from "luxon";
 
 import { Card, CardContent, CardHeader } from "~/core/components/ui/card";
 
 interface ThreadContentProps {
   thread: any;
-  formatDate: (date: string) => string;
 }
 
-export function ThreadContent({ thread, formatDate }: ThreadContentProps) {
+export function ThreadContent({ thread }: ThreadContentProps) {
   return (
     <Card className="dark:border-gray-700 dark:bg-gray-800">
       <CardHeader>
@@ -15,7 +15,12 @@ export function ThreadContent({ thread, formatDate }: ThreadContentProps) {
           <div className="flex-1">
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4" />
-              {formatDate(thread.created_at)}
+              {DateTime.fromISO(thread.created_at, {
+                zone: "utc",
+              })
+                .toLocal()
+                .setLocale(navigator.language)
+                .toLocaleString(DateTime.DATETIME_MED)}
             </div>
           </div>
         </div>

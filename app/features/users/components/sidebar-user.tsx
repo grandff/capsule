@@ -30,6 +30,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "~/core/components/ui/sidebar";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 
 export default function SidebarUser({
   user,
@@ -40,7 +41,14 @@ export default function SidebarUser({
     avatarUrl: string;
   };
 }) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const isMobileDevice = useIsMobile();
+
+  const handleLinkClick = () => {
+    if (isMobileDevice) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -94,7 +102,11 @@ export default function SidebarUser({
             <DropdownMenuSeparator /> */}
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to="/account/edit" viewTransition>
+                <Link
+                  to="/account/edit"
+                  viewTransition
+                  onClick={handleLinkClick}
+                >
                   <UserCircle2Icon />
                   Account
                 </Link>
@@ -112,7 +124,7 @@ export default function SidebarUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/logout">
+              <Link to="/logout" onClick={handleLinkClick}>
                 <LogOut />
                 Log out
               </Link>

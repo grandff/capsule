@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
+import { DateTime } from "luxon";
+
 export async function getUserProfile(
   client: SupabaseClient<Database>,
   { userId }: { userId: string | null },
@@ -47,77 +49,10 @@ export async function getDashboardStats(
     return null;
   }
 
-  // 전체 게시글 수 조회
-  const { count: totalPosts, error: countError } = await client
-    .from("threads")
-    .select("*", { count: "exact", head: true })
-    .eq("profile_id", userId)
-    .not("result_id", "is", null)
-    .not("result_id", "eq", "DELETED");
+  // 최근 14일간의 게시글 조회 (최신순)
+  const fourteenDaysAgo = DateTime.now().minus({ days: 14 }).toISO();
 
-  if (countError) {
-    console.error("Error fetching total posts:", countError);
-    throw countError;
-  }
-
-  // 평균 통계 계산을 위한 모든 게시글 조회
-  const { data: allThreads, error: threadsError } = await client
-    .from("threads")
-    .select("like_cnt, share_cnt, comment_cnt, view_cnt, now_follow_cnt")
-    .eq("profile_id", userId)
-    .not("result_id", "is", null)
-    .not("result_id", "eq", "DELETED");
-
-  if (threadsError) {
-    console.error("Error fetching threads:", threadsError);
-    throw threadsError;
-  }
-
-  // 평균값 계산
-  const averages = {
-    posts: Math.round((totalPosts || 0) / 7), // 7일 평균으로 계산
-    likes:
-      allThreads && allThreads.length > 0
-        ? Math.round(
-            allThreads.reduce((sum, t) => sum + (t.like_cnt || 0), 0) /
-              allThreads.length,
-          )
-        : 0,
-    shares:
-      allThreads && allThreads.length > 0
-        ? Math.round(
-            allThreads.reduce((sum, t) => sum + (t.share_cnt || 0), 0) /
-              allThreads.length,
-          )
-        : 0,
-    comments:
-      allThreads && allThreads.length > 0
-        ? Math.round(
-            allThreads.reduce((sum, t) => sum + (t.comment_cnt || 0), 0) /
-              allThreads.length,
-          )
-        : 0,
-    views:
-      allThreads && allThreads.length > 0
-        ? Math.round(
-            allThreads.reduce((sum, t) => sum + (t.view_cnt || 0), 0) /
-              allThreads.length,
-          )
-        : 0,
-    followers:
-      allThreads && allThreads.length > 0
-        ? Math.round(
-            allThreads.reduce((sum, t) => sum + (t.now_follow_cnt || 0), 0) /
-              allThreads.length,
-          )
-        : 0,
-  };
-
-  // 일별 통계 (최근 7일)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const { data: dailyThreads, error: dailyError } = await client
+  const { data: threads, error: threadsError } = await client
     .from("threads")
     .select(
       "created_at, like_cnt, share_cnt, comment_cnt, view_cnt, now_follow_cnt",
@@ -125,15 +60,15 @@ export async function getDashboardStats(
     .eq("profile_id", userId)
     .not("result_id", "is", null)
     .not("result_id", "eq", "DELETED")
-    .gte("created_at", sevenDaysAgo.toISOString())
-    .order("created_at", { ascending: true });
+    .gte("created_at", fourteenDaysAgo)
+    .order("created_at", { ascending: false });
 
-  if (dailyError) {
-    console.error("Error fetching daily threads:", dailyError);
-    throw dailyError;
+  if (threadsError) {
+    console.error("Error fetching threads:", threadsError);
+    throw threadsError;
   }
 
-  // 일별 데이터 그룹화
+  // luxon을 사용한 날짜 그룹핑
   const dailyStatsMap = new Map<
     string,
     {
@@ -142,46 +77,61 @@ export async function getDashboardStats(
       total_shares: number;
       total_comments: number;
       total_views: number;
-      total_followers: number;
     }
   >();
 
-  // 최근 7일간의 모든 날짜 초기화
-  for (let i = 0; i < 7; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split("T")[0];
+  // 최근 14일간의 모든 날짜 초기화
+  for (let i = 0; i < 14; i++) {
+    const date = DateTime.now().minus({ days: i });
+    const dateStr = date.toFormat("yyyy-MM-dd");
     dailyStatsMap.set(dateStr, {
       posts: 0,
       total_likes: 0,
       total_shares: 0,
       total_comments: 0,
       total_views: 0,
-      total_followers: 0,
     });
   }
 
   // 실제 데이터로 채우기
-  dailyThreads?.forEach((thread) => {
-    const dateStr = new Date(thread.created_at).toISOString().split("T")[0];
+  threads?.forEach((thread) => {
+    const date = DateTime.fromISO(thread.created_at, { zone: "Asia/Seoul" });
+    const dateStr = date.toFormat("yyyy-MM-dd");
     const existing = dailyStatsMap.get(dateStr);
+
     if (existing) {
       existing.posts += 1;
       existing.total_likes += thread.like_cnt || 0;
       existing.total_shares += thread.share_cnt || 0;
       existing.total_comments += thread.comment_cnt || 0;
       existing.total_views += thread.view_cnt || 0;
-      existing.total_followers += thread.now_follow_cnt || 0;
     }
   });
 
+  // 최신순으로 정렬된 일별 통계
   const dailyStats = Array.from(dailyStatsMap.entries())
     .map(([date, stats]) => ({ date, ...stats }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => b.date.localeCompare(a.date));
 
-  // FIXME: 팔로워 증가율 계산을 위해서는 이전 날짜의 팔로워 수가 필요합니다.
-  // 현재 스키마에서는 이 정보를 제공하기 어려우므로 나중에 user_metrics 테이블을 활용하거나
-  // 별도의 팔로워 히스토리 테이블을 만들어야 합니다.
+  // 평균값 계산 (전체 기간)
+  const totalPosts = threads?.length || 0;
+  const totalLikes =
+    threads?.reduce((sum, t) => sum + (t.like_cnt || 0), 0) || 0;
+  const totalShares =
+    threads?.reduce((sum, t) => sum + (t.share_cnt || 0), 0) || 0;
+  const totalComments =
+    threads?.reduce((sum, t) => sum + (t.comment_cnt || 0), 0) || 0;
+  const totalViews =
+    threads?.reduce((sum, t) => sum + (t.view_cnt || 0), 0) || 0;
+
+  const averages = {
+    posts: totalPosts > 0 ? Math.round(totalPosts / 14) : 0, // 14일 평균
+    likes: totalPosts > 0 ? Math.round(totalLikes / totalPosts) : 0, // 게시글당 평균
+    shares: totalPosts > 0 ? Math.round(totalShares / totalPosts) : 0,
+    comments: totalPosts > 0 ? Math.round(totalComments / totalPosts) : 0,
+    views: totalPosts > 0 ? Math.round(totalViews / totalPosts) : 0,
+    followers: 0, // 일단 0으로 설정, 나중에 별도 계산
+  };
 
   return {
     averages,
@@ -196,5 +146,23 @@ export async function getUserList(client: SupabaseClient<Database>) {
     throw error;
   }
 
+  return data;
+}
+
+export async function getFollowersCount(
+  client: SupabaseClient<Database>,
+  { profileId, threadId }: { profileId: string; threadId: number },
+) {
+  const { data, error } = await client
+    .from("followers_history")
+    .select("follower_count")
+    .eq("profile_id", profileId)
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    return null;
+  }
   return data;
 }

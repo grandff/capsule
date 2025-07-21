@@ -147,17 +147,17 @@ export function NavigationBarMobile({
         </SheetTrigger>
       </nav>
       <SheetContent>
-        <SheetHeader>
-          {/* <SheetClose asChild>
+        {/* <SheetHeader>
+          <SheetClose asChild>
             <Link to="/blog">Blog</Link>
-          </SheetClose> */}
+          </SheetClose>
           <SheetClose asChild>
             <Link to="/contact">Contact</Link>
           </SheetClose>
           <SheetClose asChild>
             <Link to="/payments/checkout">Payments</Link>
           </SheetClose>
-        </SheetHeader>
+        </SheetHeader> */}
         {loading ? (
           <div className="flex items-center">
             <div className="bg-muted-foreground h-4 w-24 animate-pulse rounded-full" />

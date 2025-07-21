@@ -233,13 +233,13 @@ export function NavigationBar({
           >
             Blog
           </Link> */}
-          <Link
+          {/* <Link
             to="/contact"
             viewTransition
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
             Contact
-          </Link>
+          </Link> */}
           <Link
             to="/faq"
             viewTransition
@@ -290,15 +290,15 @@ export function NavigationBar({
             {/* <SheetClose asChild>
               <Link to="/blog">Blog</Link>
             </SheetClose> */}
-            <SheetClose asChild>
+            {/* <SheetClose asChild>
               <Link to="/contact">Contact</Link>
-            </SheetClose>
+            </SheetClose> */}
             <SheetClose asChild>
               <Link to="/faq">FAQ</Link>
             </SheetClose>
-            <SheetClose asChild>
+            {/* <SheetClose asChild>
               <Link to="/payments/checkout">Payments</Link>
-            </SheetClose>
+            </SheetClose> */}
           </SheetHeader>
           {loading ? (
             <div className="flex items-center">

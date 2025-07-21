@@ -18,13 +18,7 @@ interface AverageStatsProps {
 }
 
 export function AverageStats({ averages }: AverageStatsProps) {
-  const statTypes = [
-    "posts",
-    "likes",
-    "followers",
-    "shares",
-    "comments",
-  ] as const;
+  const statTypes = ["posts", "views", "likes", "comments", "shares"] as const;
 
   return (
     <div className="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-5 dark:bg-gray-800">

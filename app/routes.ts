@@ -57,7 +57,6 @@ export default [
       route("/check-token", "features/write/api/check-token.tsx"),
     ]),
     ...prefix("/history", [
-      route("/thread/:id", "features/history/api/thread-detail.tsx"),
       route(
         "/retrieve-user-posts/:id",
         "features/history/api/retrieve-user-posts.tsx",

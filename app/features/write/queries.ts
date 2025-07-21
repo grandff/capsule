@@ -18,3 +18,27 @@ export async function getRecentThreads(
 
   return data;
 }
+
+// 사용자의 최신 GPT 분석 결과 조회
+export async function getLatestGptAnalysisResult(
+  client: SupabaseClient<Database>,
+  profileId: string,
+) {
+  const { data, error } = await client
+    .from("gpt_analysis_results")
+    .select("*")
+    .eq("profile_id", profileId)
+    .order("analysis_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      // 데이터가 없는 경우
+      return null;
+    }
+    throw error;
+  }
+
+  return data;
+}

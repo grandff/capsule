@@ -115,10 +115,8 @@ export async function loader({ request }: Route.LoaderArgs) {
       const cachedSettings = SettingsCache.get(user.id);
 
       if (cachedSettings) {
-        console.log("캐시된 설정 사용:", user.id);
         userSettings = cachedSettings;
       } else {
-        console.log("데이터베이스에서 설정 조회:", user.id);
         userSettings = await getSetting(client, user.id);
 
         // 캐시에 저장
@@ -131,14 +129,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       // Promise.resolve()로 비동기 실행하여 페이지 로딩을 차단하지 않음
       Promise.resolve().then(async () => {
         try {
-          const result = await refreshToken(client, user.id);
-          if (result.success) {
-            console.log("토큰 재발급 완료:", user.id);
-          } else if (result.error === "Already refreshed today") {
-            console.log("토큰 재발급 스킵 (오늘 이미 완료):", user.id);
-          } else {
-            console.log("토큰 재발급 실패:", result.error);
-          }
+          await refreshToken(client, user.id);
         } catch (error) {
           console.error("토큰 재발급 중 오류:", error);
         }
@@ -229,11 +220,6 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
       } else {
         document.body.classList.remove("colorblind-mode");
       }
-
-      console.log("전역 설정 적용 완료:", {
-        fontSize: settings.fontSize,
-        colorBlindMode: settings.colorBlindMode,
-      });
     };
 
     // 설정이 있으면 적용

@@ -95,6 +95,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // 토큰 정보 가져오기
+  console.log("send-to-thread: getThreadsAccessToken 호출");
   const { accessToken, expiresAt, snsId } = await getThreadsAccessToken(
     client,
     user.id,
@@ -255,14 +256,6 @@ export async function action({ request }: ActionFunctionArgs) {
         const insightsData = await fetchUserInsights(client, user.id);
 
         if (insightsData.success && insightsData.data) {
-          // 모든 인사이트 데이터 저장 (시계열 + 총계)
-          await saveUserInsights(
-            client,
-            user.id,
-            localThreadId,
-            insightsData.data.data,
-          );
-
           // 팔로워 수 업데이트
           const followersCount = await getFollowersCount(
             insightsData.data.data,
@@ -271,6 +264,14 @@ export async function action({ request }: ActionFunctionArgs) {
             client,
             localThreadId,
             followersCount,
+          );
+
+          // 모든 인사이트 데이터 저장 (시계열 + 총계)
+          await saveUserInsights(
+            client,
+            user.id,
+            localThreadId,
+            insightsData.data.data,
           );
 
           console.log("백그라운드 사용자 인사이트 저장 완료");

@@ -16,6 +16,7 @@
 import type { Route } from "./+types/mailer";
 
 import * as Sentry from "@sentry/node";
+import WelcomeUserEmail from "react-email-starter/emails/welcome-user";
 import { data } from "react-router";
 import WelcomeEmail from "transactional-emails/emails/welcome";
 
@@ -98,10 +99,10 @@ export async function action({ request }: Route.LoaderArgs) {
       // Send welcome email using the Resend client
       const { error } = await resendClient.emails.send({
         // Make sure this domain is the Resend domain.
-        from: "Supaplate <hello@supaplate.com>",
+        from: "CapsuleMaster <admin@mail.capsule.diy>",
         to: [to],
-        subject: "Welcome to Supaplate!",
-        react: WelcomeEmail({ profile: JSON.stringify(emailData, null, 2) }),
+        subject: "3번 클릭으로 끝내는 글쓰기, 시작해보세요!",
+        react: WelcomeUserEmail({ steps: [], links: [] }),
       });
 
       // Log any errors that occur during email sending

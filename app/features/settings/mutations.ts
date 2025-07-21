@@ -105,10 +105,11 @@ export async function updateThreadsAccessToken(
   }: { userId: string; accessToken: string; expiresIn: number },
 ) {
   const expiresAt = DateTime.now().plus({ seconds: expiresIn });
+  const encryptedToken = encryptToken(accessToken);
   const { data, error } = await client
     .from("sns_profiles")
     .update({
-      access_token: accessToken,
+      access_token: encryptedToken,
       expires_at: expiresAt.toISO(),
     })
     .eq("profile_id", userId)
