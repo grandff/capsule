@@ -3,19 +3,16 @@ import type * as React from "react";
 import {
   Body,
   Button,
-  Column,
   Container,
   Head,
   Heading,
   Html,
   Img,
-  Link,
   Preview,
   Row,
   Section,
   Tailwind,
   Text,
-  pixelBasedPreset,
 } from "@react-email/components";
 
 interface WelcomeUserEmailProps {
@@ -37,7 +34,6 @@ export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
       <Head />
       <Tailwind
         config={{
-          presets: [pixelBasedPreset],
           theme: {
             extend: {
               colors: {
@@ -56,13 +52,14 @@ export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
         <Preview>단 3번의 클릭으로 끝내는 브랜드 홍보, Capsule</Preview>
         <Body className="bg-offwhite font-sans text-base">
           {/* FIXME 로고 생성 후 수정*/}
-          <Img
+          <Heading>Capsule</Heading>
+          {/* <Img
             src={`${baseUrl}/static/netlify-logo.png`}
             width="184"
             height="75"
             alt="Netlify"
             className="mx-auto my-20"
-          />
+          /> */}
           <Container className="bg-white p-45">
             <Heading className="my-0 text-center leading-8">
               클릭만 하면 Capsule이 써드려요!
@@ -70,9 +67,14 @@ export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
             <Section className="mt-20">
               <Row>
                 <Text className="text-base">
-                  Capsule은 브랜드 홍보에 딱 맞는 콘텐츠를 단 3번의 클릭으로
-                  완성해드려요. 내가 직접 쓴 것처럼 자연스럽고, SNS 반응도 좋은
-                  글을 지금 바로 만들어보세요.
+                  Capsule은 단순한 글 작성 툴이 아닙니다. 시간은 없고, 무엇을
+                  어떻게 써야 할지 막막할 때, 3번의 클릭으로 콘텐츠 제작을 끝낼
+                  수 있도록 도와드려요.
+                </Text>
+
+                <Text className="text-base">
+                  원하는 분위기(친근한, 전문적인 등)에 맞춰 문체를 조정할 수
+                  있어 내가 직접 쓴 것처럼 자연스러운 글이 완성됩니다.
                 </Text>
 
                 <Text className="text-base">
@@ -85,7 +87,7 @@ export const WelcomeUserEmail = ({ steps, links }: WelcomeUserEmailProps) => {
 
             <Section className="text-center">
               <Button className="bg-brand rounded-lg px-[18px] py-3 text-white">
-                5초 안에 홍보하러가기
+                지금 글 써보기
               </Button>
             </Section>
 
