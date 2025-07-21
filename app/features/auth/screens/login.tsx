@@ -29,6 +29,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
+import { handleAppRedirectWithOptions } from "~/core/lib/app-redirect.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import FormErrors from "../../../core/components/form-error";
@@ -46,6 +47,30 @@ export const meta: Route.MetaFunction = () => {
     },
   ];
 };
+
+/**
+ * Loader function for login page
+ *
+ * This function handles app-specific redirects for the login page.
+ * If a user is already authenticated and accessing from the app,
+ * they will be redirected to the dashboard.
+ *
+ * @param request - The incoming request object
+ * @returns Empty object or redirect response
+ */
+export async function loader({ request }: Route.LoaderArgs) {
+  const [client] = makeServerClient(request);
+
+  // 앱에서 이미 로그인된 사용자가 접근하는 경우 대시보드로 리다이렉트
+  const appRedirect = await handleAppRedirectWithOptions(request, client, {
+    authenticatedRedirect: "/dashboard",
+    unauthenticatedRedirect: "/login", // 이미 로그인 페이지에 있으므로 리다이렉트하지 않음
+    skipRedirectForWeb: true,
+  });
+  if (appRedirect) return appRedirect;
+
+  return {};
+}
 
 /**
  * Form validation schema for login

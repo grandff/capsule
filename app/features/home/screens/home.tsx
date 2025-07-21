@@ -10,6 +10,7 @@
  * - Client-side translation with useTranslation hook
  * - SEO-friendly metadata using React Router's meta export
  * - Responsive typography with Tailwind CSS
+ * - App request detection and automatic redirection
  */
 import type { Route } from "./+types/home";
 
@@ -27,9 +28,9 @@ import {
 } from "~/core/components/ui/avatar";
 import { Button } from "~/core/components/ui/button";
 import { Card, CardContent } from "~/core/components/ui/card";
+import { handleAppRedirect } from "~/core/lib/app-redirect.server";
 import i18next from "~/core/lib/i18next.server";
 import makeServerClient from "~/core/lib/supa-client.server";
-import { getUserProfile } from "~/features/users/queries";
 
 /**
  * Meta function for setting page metadata
@@ -59,6 +60,7 @@ export const meta: Route.MetaFunction = ({ data }) => {
  * 1. Extracts the user's locale from the request (via cookies or Accept-Language header)
  * 2. Creates a translation function for that specific locale
  * 3. Returns translated strings for the page title and subtitle
+ * 4. Detects app requests and redirects appropriately
  *
  * This approach ensures that even on first load, users see content in their preferred language,
  * which improves both user experience and SEO (search engines see localized content).
@@ -70,19 +72,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Get a translation function for the user's locale from the request
   const t = await i18next.getFixedT(request);
   const [client] = makeServerClient(request);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  if (user) {
-    const profile = await getUserProfile(client, {
-      userId: user.id,
-    });
-    if (profile) {
-      return redirect("/dashboard");
-    }
-  }
 
-  // 로그인 된 상태면 대시보드로 리다이렉트
+  // 앱 요청에 대한 자동 리다이렉트 처리
+  const appRedirect = await handleAppRedirect(request, client);
+  if (appRedirect) return appRedirect;
 
   // Return translated strings for use in both the component and meta function
   return {
