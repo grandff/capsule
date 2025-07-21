@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "react-router";
 
 import { DateTime } from "luxon";
 
+import adminClient from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getUserInterestKeywords } from "~/features/trend/queries";
 import { getUserList } from "~/features/users/queries";
@@ -20,15 +21,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const [client, headers] = makeServerClient(request);
-
   // 2. 현재 사용자 목록 조회
-  const userList = await getUserList(client);
+  const userList = await getUserList(adminClient);
+  console.log("userList", userList);
 
   // 3. 사용자 별로 쓰레드 분석 시작
   for (const user of userList) {
     try {
-      const recentThreads = await getRecentThreads(client, user.profile_id);
+      const recentThreads = await getRecentThreads(
+        adminClient,
+        user.profile_id,
+      );
 
       // 3-1. 최근 작성 여부 체크 (어제 날짜 기준)
       if (recentThreads.length === 0) {
@@ -55,7 +58,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       // 3-2. 사용자 관심 키워드 조회
       const userInterestKeywords = await getUserInterestKeywords(
-        client,
+        adminClient,
         user.profile_id,
       );
       const keywordList =
@@ -83,7 +86,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       if (analysisResult) {
         console.log(`사용자 ${user.profile_id} 분석 결과:`, analysisResult);
-        const saveResult = await saveGptAnalysisResult(client, {
+        const saveResult = await saveGptAnalysisResult(adminClient, {
           profile_id: user.profile_id,
           analysis_text: analysisResult || "",
           analysis_date: DateTime.now().toISO(),

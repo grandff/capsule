@@ -146,12 +146,10 @@ export async function action({ request }: Route.LoaderArgs) {
     );
   }
 
-  console.error("message", message);
-
   // Process the message if one was retrieved from the queue
   if (message) {
     // Extract email details from the message
-    console.error("message", message);
+
     const {
       message: { to, data: emailData, template },
     } = message as { message: EmailMessage };
