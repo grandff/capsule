@@ -3,16 +3,21 @@ import type { LoaderFunctionArgs } from "react-router";
 import { DateTime } from "luxon";
 
 import adminClient from "~/core/lib/supa-admin-client.server";
-import makeServerClient from "~/core/lib/supa-client.server";
 import { getUserInterestKeywords } from "~/features/trend/queries";
 import { getUserList } from "~/features/users/queries";
 import { validatePerplexityCronSecret } from "~/utils/cron-validation";
 import { gptCompletion } from "~/utils/gpt-util";
 
-import { saveGptAnalysisResult } from "../mutations";
-import { getRecentThreads } from "../queries";
-import { getAnalysisPrompt } from "./prompts";
+import { getAnalysisPrompt } from "../../write/api/prompts";
+import { saveGptAnalysisResult } from "../../write/mutations";
+import { getRecentThreads } from "../../write/queries";
 
+/**
+ * GPT 분석 생성 API (Cronjob 전용)
+ *
+ * 이 엔드포인트는 cronjob에서만 호출되어야 하며,
+ * 사용자별로 최근 쓰레드를 분석하여 AI 추천 텍스트를 생성합니다.
+ */
 export async function loader({ request }: LoaderFunctionArgs) {
   // 1. 헤더 검증 (cronjob에서만 호출 가능) - 로컬 개발 환경에서는 건너뛰기
   const isLocalDev =

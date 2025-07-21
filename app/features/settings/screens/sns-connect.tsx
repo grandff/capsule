@@ -1,4 +1,5 @@
 import type { SnsPlatform } from "../types/settings-type";
+import type { Route } from "./+types/sns-connect";
 
 import { useEffect, useState } from "react";
 import {
@@ -15,6 +16,10 @@ import ConnectionGuide from "../components/connection-guide";
 import SnsPlatformSection from "../components/sns-platform-section";
 import SnsStatus from "../components/sns-status";
 import { isConnected } from "../utils/sns-connect-util";
+
+export const meta: Route.MetaFunction = () => {
+  return [{ title: `SNS Connect | ${import.meta.env.VITE_APP_NAME}` }];
+};
 
 // SVG 로고 컴포넌트들
 export const ThreadsLogo = () => (

@@ -1,5 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
 
+import type { Route } from "./+types/trend-list";
+
 import { useEffect } from "react";
 import { useFetcher } from "react-router";
 import { ToastContainer, toast } from "react-toastify";
@@ -12,6 +14,10 @@ import { TrendData } from "../components/trend-data";
 import { saveInterestKeywords } from "../mutations";
 import { getUserInterestKeywords, getUserLatestTrends } from "../queries";
 import { isValidTrendData } from "../utils/trend-helpers";
+
+export const meta: Route.MetaFunction = () => {
+  return [{ title: `Trend | ${import.meta.env.VITE_APP_NAME}` }];
+};
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {

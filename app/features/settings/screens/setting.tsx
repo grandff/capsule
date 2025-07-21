@@ -43,6 +43,10 @@ import { settingSchema } from "../schema";
 
 type FontSize = "default" | "large" | "larger";
 
+export const meta: Route.MetaFunction = () => {
+  return [{ title: `Setting | ${import.meta.env.VITE_APP_NAME}` }];
+};
+
 /**
  * 설정 데이터 로더
  */

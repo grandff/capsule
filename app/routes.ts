@@ -74,7 +74,6 @@ export default [
     ]),
     ...prefix("/chatgpt", [
       route("/create-gpt-idea", "features/chatgpt/api/create-gpt-idea.tsx"),
-      route("/create-gpt-analyze", "features/write/api/create-gpt-analyze.tsx"),
     ]),
     ...prefix("/trend", [
       route(
@@ -82,7 +81,10 @@ export default [
         "features/trend/api/get-trend-by-perplexity.tsx",
       ),
     ]),
-    ...prefix("/cron", [route("/mailer", "features/cron/api/mailer.tsx")]),
+    ...prefix("/cron", [
+      route("/mailer", "features/cron/api/mailer.tsx"),
+      route("/create-gpt-analyze", "features/cron/api/create-gpt-analyze.tsx"),
+    ]),
   ]),
 
   layout("core/layouts/navigation.layout.tsx", [
