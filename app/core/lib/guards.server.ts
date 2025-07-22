@@ -122,18 +122,16 @@ export function detectAppRequest(request: Request): boolean {
   );
 
   // 디버깅을 위한 로그
-  if (process.env.NODE_ENV === "development") {
-    console.log("App detection debug:", {
-      hasAppSource,
-      hasAppUserAgent,
-      expectedSource: process.env.X_APP_SOURCE,
-      expectedAgent: process.env.APP_AGENT_VALUE,
-      actualHeaders: {
-        "X-App-Source": request.headers.get("X-App-Source"),
-        "User-Agent": request.headers.get("User-Agent"),
-      },
-    });
-  }
+  console.log("App detection debug:", {
+    hasAppSource,
+    hasAppUserAgent,
+    expectedSource: process.env.X_APP_SOURCE,
+    expectedAgent: process.env.APP_AGENT_VALUE,
+    actualHeaders: {
+      "X-App-Source": request.headers.get("X-App-Source"),
+      "User-Agent": request.headers.get("User-Agent"),
+    },
+  });
 
   // 두 헤더 모두 정확히 일치해야 앱 요청으로 인정
   return hasAppSource && hasAppUserAgent;

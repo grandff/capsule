@@ -8,18 +8,10 @@
  */
 import type { Route } from "./+types/login";
 
-import { AlertCircle, Loader2Icon } from "lucide-react";
 import { useRef } from "react";
-import { Form, Link, data, redirect, useFetcher } from "react-router";
+import { data, redirect, useFetcher } from "react-router";
 import { z } from "zod";
 
-import FormButton from "~/core/components/form-button";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "~/core/components/ui/alert";
-import { Button } from "~/core/components/ui/button";
 import {
   Card,
   CardContent,
@@ -27,12 +19,8 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
-import { Input } from "~/core/components/ui/input";
-import { Label } from "~/core/components/ui/label";
-import { handleAppRedirectWithOptions } from "~/core/lib/app-redirect.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
-import FormErrors from "../../../core/components/form-error";
 import { SignInButtons } from "../components/auth-login-buttons";
 
 /**
@@ -51,25 +39,14 @@ export const meta: Route.MetaFunction = () => {
 /**
  * Loader function for login page
  *
- * This function handles app-specific redirects for the login page.
- * If a user is already authenticated and accessing from the app,
- * they will be redirected to the dashboard.
+ * This function handles the login page loader.
+ * App-specific redirects are already handled in the home page loader.
  *
  * @param request - The incoming request object
- * @returns Empty object or redirect response
+ * @returns Empty object
  */
 export async function loader({ request }: Route.LoaderArgs) {
-  const [client] = makeServerClient(request);
-
-  // 앱에서 이미 로그인된 사용자가 접근하는 경우에만 리다이렉트
-  // 웹 브라우저에서는 앱 리다이렉트를 적용하지 않음
-  const appRedirect = await handleAppRedirectWithOptions(request, client, {
-    authenticatedRedirect: "/dashboard",
-    unauthenticatedRedirect: undefined, // 로그인 페이지에서는 인증되지 않은 사용자를 리다이렉트하지 않음
-    skipRedirectForWeb: true,
-  });
-  if (appRedirect) return appRedirect;
-
+  // 앱 리다이렉트는 홈 페이지에서 이미 처리되므로 여기서는 불필요
   return {};
 }
 

@@ -14,18 +14,12 @@
  */
 import type { Route } from "./+types/home";
 
-import { Marquee } from "components/magicui/marquee";
 import { SparklesText } from "components/magicui/sparkles-text";
-import { Apple, Monitor, Smartphone } from "lucide-react";
+import { Monitor } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { redirect, useNavigate, useOutletContext } from "react-router";
+import { useNavigate, useOutletContext } from "react-router";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "~/core/components/ui/avatar";
 import { Button } from "~/core/components/ui/button";
 import { Card, CardContent } from "~/core/components/ui/card";
 import { handleAppRedirect } from "~/core/lib/app-redirect.server";
