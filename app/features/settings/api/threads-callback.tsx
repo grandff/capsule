@@ -8,11 +8,9 @@ const THREADS_CLIENT_ID =
   process.env.THREADS_CLIENT_ID || "your_threads_client_id";
 const THREADS_CLIENT_SECRET =
   process.env.THREADS_CLIENT_SECRET || "your_threads_client_secret";
-// 로컬 환경일 때와 운영환경일때 구분
-const REDIRECT_URI =
-  process.env.NODE_ENV === "development"
-    ? "https://localhost:5173/api/settings/threads-auth/callback"
-    : "https://capsule-three.vercel.app/api/settings/threads-auth/callback";
+
+// 개발일때와 운영일때 분리해서 처리
+const REDIRECT_URI = process.env.THREADS_REDIRECT_URI || "redirect_uri";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   // get code from url
