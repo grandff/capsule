@@ -7,8 +7,12 @@ const THREADS_CLIENT_ID =
   process.env.THREADS_CLIENT_ID || "your_threads_client_id";
 const THREADS_CLIENT_SECRET =
   process.env.THREADS_CLIENT_SECRET || "your_threads_client_secret";
+
+// 개발일때와 운영일때 분리해서 처리
 const REDIRECT_URI =
-  "https://localhost:5173/api/settings/threads-auth/callback";
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:5173/api/settings/threads-auth/callback"
+    : "https://capsule.diy/api/settings/threads-auth/callback";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const authUrl =
