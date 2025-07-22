@@ -33,11 +33,13 @@ export default {
     ...(process.env.VERCEL_ENV === "production" ? [vercelPreset()] : []),
   ],
   buildEnd: async ({ viteConfig, reactRouterConfig, buildManifest }) => {
+    console.log("buildEnd");
     if (
       process.env.SENTRY_ORG &&
       process.env.SENTRY_PROJECT &&
       process.env.SENTRY_AUTH_TOKEN
     ) {
+      console.log("sentryOnBuildEnd");
       await sentryOnBuildEnd({
         viteConfig,
         reactRouterConfig,

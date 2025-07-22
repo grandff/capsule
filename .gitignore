@@ -171,3 +171,6 @@ dev-debug.log
 # Task files
 # tasks.json
 # tasks/ 
+
+# Sentry Config File
+.env.sentry-build-plugin
