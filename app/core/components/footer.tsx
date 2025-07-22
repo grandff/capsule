@@ -27,7 +27,25 @@ import { Link } from "react-router";
 export default function Footer() {
   return (
     <footer className="text-muted-foreground mx-10 mt-auto flex flex-col border-t py-3 text-sm md:py-5">
-      <div className="mx-auto flex h-full w-full max-w-screen-2xl flex-col items-center justify-between gap-2.5 md:order-none md:flex-row md:gap-0">
+      {/* Business information - displayed below copyright and legal links */}
+      <div className="mx-auto w-full max-w-screen-2xl">
+        <div className="text-muted-foreground/80 flex flex-col gap-2 text-xs">
+          {/* First row: Company name, CEO, Privacy Officer */}
+          <div className="flex flex-wrap items-center justify-center gap-4 md:justify-start">
+            <span className="font-medium">아진테크</span>
+            <span>대표: 박명순</span>
+            <span>개인정보책임관리자: 양수현</span>
+          </div>
+
+          {/* Second row: Business number, Address, Email */}
+          <div className="flex flex-wrap items-center justify-center gap-4 md:justify-start">
+            <span>사업자번호: 417-69-00433</span>
+            <span>주소: 광주 서구 풍서우로 450</span>
+            <span>이메일: admin [@] capsule.diy</span>
+          </div>
+        </div>
+      </div>
+      <div className="mx-auto mt-4 flex h-full w-full max-w-screen-2xl flex-col items-center justify-between gap-2.5 md:order-none md:flex-row md:gap-0">
         {/* Copyright notice - appears second on mobile, first on desktop */}
         <div className="order-2 md:order-none">
           <p>
@@ -44,18 +62,6 @@ export default function Footer() {
           <Link to="/legal/terms-of-service" viewTransition>
             Terms of Service
           </Link>
-        </div>
-      </div>
-
-      {/* Business information - displayed below copyright and legal links */}
-      <div className="mx-auto mt-4 w-full max-w-screen-2xl">
-        <div className="text-muted-foreground/80 flex flex-wrap items-center justify-center gap-4 text-xs md:justify-start">
-          <span className="font-medium">아진테크</span>
-          <span>대표: 박명순</span>
-          <span>개인정보책임관리자: 양수현</span>
-          <span>사업자번호: 417-69-00433</span>
-          <span>주소: 광주 서구 풍서우로 450</span>
-          <span>이메일: admin [@] capsule.diy</span>
         </div>
       </div>
     </footer>
