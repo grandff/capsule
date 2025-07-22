@@ -14,6 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { redirect } from "react-router";
 
+import { getSetting } from "~/features/settings/queries";
 import { getUserProfile } from "~/features/users/queries";
 
 import { detectAppRequest } from "./guards.server";
@@ -50,15 +51,21 @@ export async function handleAppRedirect(
   request: Request,
   client: SupabaseClient,
 ): Promise<Response | null> {
-  // 앱의 경우 home을 패스
-  if (detectAppRequest(request)) {
-    return redirect("/dashboard");
-  }
-
   // 사용자 인증 상태 확인
   const {
     data: { user },
   } = await client.auth.getUser();
+
+  // 앱의 경우 home을 패스
+  if (detectAppRequest(request)) {
+    if (user) {
+      const settings = await getSetting(client, user.id);
+      const theme = settings?.theme || "system";
+      return redirect(`/dashboard?theme=${theme}`);
+    }
+    // 로그인 안된 사용자는 리다이렉트하지 않음
+    return null;
+  }
 
   if (user) {
     // 로그인된 사용자인 경우 프로필 확인
