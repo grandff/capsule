@@ -50,9 +50,9 @@ export async function handleAppRedirect(
   request: Request,
   client: SupabaseClient,
 ): Promise<Response | null> {
-  // 앱 요청이 아닌 경우 리다이렉트하지 않음
-  if (!detectAppRequest(request)) {
-    return null;
+  // 앱의 경우 home을 패스
+  if (detectAppRequest(request)) {
+    return redirect("/dashboard");
   }
 
   // 사용자 인증 상태 확인
@@ -69,14 +69,10 @@ export async function handleAppRedirect(
     if (profile) {
       // 프로필이 있는 경우 대시보드로 리다이렉트
       return redirect("/dashboard");
-    } else {
-      // 프로필이 없는 경우 프로필 설정 페이지로 리다이렉트
-      return redirect("/account");
     }
-  } else {
-    // 로그인되지 않은 사용자인 경우 로그인 페이지로 리다이렉트
-    return redirect("/login");
   }
+
+  return null;
 }
 
 /**
