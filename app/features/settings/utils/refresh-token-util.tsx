@@ -59,6 +59,7 @@ export async function refreshToken(
   const response = await fetch(
     `https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=${accessToken}`,
   );
+  console.log("요청 : ", response);
 
   const tokenResponse = await response.json();
   await updateThreadsAccessToken(client, {
