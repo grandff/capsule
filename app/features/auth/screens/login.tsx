@@ -61,10 +61,11 @@ export const meta: Route.MetaFunction = () => {
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
 
-  // 앱에서 이미 로그인된 사용자가 접근하는 경우 대시보드로 리다이렉트
+  // 앱에서 이미 로그인된 사용자가 접근하는 경우에만 리다이렉트
+  // 웹 브라우저에서는 앱 리다이렉트를 적용하지 않음
   const appRedirect = await handleAppRedirectWithOptions(request, client, {
     authenticatedRedirect: "/dashboard",
-    unauthenticatedRedirect: "/login", // 이미 로그인 페이지에 있으므로 리다이렉트하지 않음
+    unauthenticatedRedirect: undefined, // 로그인 페이지에서는 인증되지 않은 사용자를 리다이렉트하지 않음
     skipRedirectForWeb: true,
   });
   if (appRedirect) return appRedirect;

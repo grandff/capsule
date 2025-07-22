@@ -131,7 +131,11 @@ export async function handleAppRedirectWithOptions(
       return redirect(noProfileRedirect);
     }
   } else {
-    // 로그인되지 않은 사용자인 경우 로그인 페이지로 리다이렉트
+    // 로그인되지 않은 사용자인 경우
+    // unauthenticatedRedirect가 undefined이면 리다이렉트하지 않음
+    if (unauthenticatedRedirect === undefined) {
+      return null;
+    }
     return redirect(unauthenticatedRedirect);
   }
 }

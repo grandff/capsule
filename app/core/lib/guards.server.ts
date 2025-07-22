@@ -105,6 +105,14 @@ export function requireMethod(method: string) {
  * @returns true if the request is from the mobile app, false otherwise
  */
 export function detectAppRequest(request: Request): boolean {
+  // 환경 변수가 설정되지 않은 경우 앱 요청으로 감지하지 않음
+  if (!process.env.X_APP_SOURCE || !process.env.APP_AGENT_VALUE) {
+    console.log(
+      "App detection: Environment variables not set, treating as web request",
+    );
+    return false;
+  }
+
   // Check for app-specific headers
   const hasAppSource = appRequestHeaders.some(
     (header) => request.headers.get(header) === appRequestHeaderValues[0],
@@ -113,7 +121,22 @@ export function detectAppRequest(request: Request): boolean {
     (header) => request.headers.get(header) === appRequestHeaderValues[1],
   );
 
-  return hasAppSource || hasAppUserAgent;
+  // 디버깅을 위한 로그
+  if (process.env.NODE_ENV === "development") {
+    console.log("App detection debug:", {
+      hasAppSource,
+      hasAppUserAgent,
+      expectedSource: process.env.X_APP_SOURCE,
+      expectedAgent: process.env.APP_AGENT_VALUE,
+      actualHeaders: {
+        "X-App-Source": request.headers.get("X-App-Source"),
+        "User-Agent": request.headers.get("User-Agent"),
+      },
+    });
+  }
+
+  // 두 헤더 모두 정확히 일치해야 앱 요청으로 인정
+  return hasAppSource && hasAppUserAgent;
 }
 
 /**
