@@ -29,7 +29,7 @@ export function ThreadStatusBadge({ thread }: ThreadStatusBadgeProps) {
     if (!thread.result_id || thread.result_id === "ERROR") {
       return {
         status: "not_uploaded",
-        label: "업로드 대기",
+        label: "업로드 중",
         color:
           "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200",
       };
@@ -37,7 +37,7 @@ export function ThreadStatusBadge({ thread }: ThreadStatusBadgeProps) {
     if (thread.result_id === "DELETED") {
       return {
         status: "deleted",
-        label: "삭제됨",
+        label: "삭제",
         color: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200",
       };
     }

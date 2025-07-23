@@ -26,7 +26,6 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    console.log("check-token: getThreadsAccessToken 호출");
     const { accessToken, expiresAt } = await getThreadsAccessToken(
       supabase,
       user.id,

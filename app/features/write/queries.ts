@@ -42,3 +42,22 @@ export async function getLatestGptAnalysisResult(
 
   return data;
 }
+
+// 미디어 목록 조회
+export async function getMediaList(
+  client: SupabaseClient<Database>,
+  profileId: string,
+  threadId: number,
+) {
+  const { data, error } = await client
+    .from("thread_media")
+    .select("public_url, media_type")
+    .eq("profile_id", profileId)
+    .eq("thread_id", threadId);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

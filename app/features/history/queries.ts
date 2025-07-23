@@ -117,6 +117,16 @@ export async function getThreadDetail(
         property_id,
         property_type,
         property
+      ),
+      thread_media (
+        media_id,
+        media_type,
+        original_filename,
+        public_url,
+        file_size,
+        mime_type,
+        storage_path,
+        created_at
       )
     `,
     )

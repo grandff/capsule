@@ -1,3 +1,10 @@
+/**
+ *
+ * 단일 미디어의 경우 : threads() -> threadsPublish()
+ * 다중 미디어인 경우 : threadsSingleMedia() -> threadsCarousel() -> threadsPublish()
+ *
+ */
+
 const THREAD_END_POINT_URL = "https://graph.threads.net/v1.0";
 
 // 단일 미디어용 쓰레드 컨테이너 생성 (다중 미디어용)
@@ -67,38 +74,31 @@ export const threadsCarousel = async (
   return data; // return carousel container Id
 };
 
-// 단일/텍스트용 쓰레드 컨테이너 생성
+// 단일/텍스트용 쓰레드 컨테이너 생성 (Case 1: 1,2,3번 케이스용)
 export const threads = async (
   userId: string,
   text: string,
   accessToken: string,
   imageUrl?: string,
   videoUrl?: string,
-  imageUrls?: string,
-  videoUrls?: string,
 ) => {
   const formData = new FormData();
 
   // 미디어 타입 결정
   let mediaType = "TEXT";
-  if (videoUrl || videoUrls) {
+  if (videoUrl) {
     mediaType = "VIDEO";
-  } else if (imageUrl || imageUrls) {
+  } else if (imageUrl) {
     mediaType = "IMAGE";
   }
 
   formData.append("media_type", mediaType);
-  formData.append("image_url", imageUrl || "");
-  formData.append("video_url", videoUrl || "");
 
-  // 다중 파일 처리
-  if (imageUrls) {
-    formData.append("image_urls", imageUrls);
-    console.log("다중 이미지 URLs 추가:", imageUrls);
+  if (imageUrl) {
+    formData.append("image_url", imageUrl);
   }
-  if (videoUrls) {
-    formData.append("video_urls", videoUrls);
-    console.log("다중 비디오 URLs 추가:", videoUrls);
+  if (videoUrl) {
+    formData.append("video_url", videoUrl);
   }
 
   formData.append("text", text);
@@ -106,6 +106,10 @@ export const threads = async (
 
   console.log("userId", userId);
   console.log("accessToken", accessToken);
+  console.log("mediaType", mediaType);
+  console.log("imageUrl", imageUrl);
+  console.log("videoUrl", videoUrl);
+
   const response = await fetch(`${THREAD_END_POINT_URL}/${userId}/threads`, {
     method: "POST",
     body: formData,

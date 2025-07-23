@@ -117,3 +117,19 @@ export const FOLLOWERS_EVENT_TYPES = [
   { value: "refresh", label: "새로고침" },
   { value: "daily_snapshot", label: "일일 스냅샷" },
 ];
+
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg"];
+export const ALLOWED_VIDEO_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "video/mov",
+];
+
+export const SHORT_TOAST_DURATION = 1500;
+export const LONG_TOAST_DURATION = 3000;
+
+// Threads API 재시도 설정
+export const THREADS_RETRY_CONFIG = {
+  maxRetries: 3,
+  retryDelayMs: 30000,
+} as const;

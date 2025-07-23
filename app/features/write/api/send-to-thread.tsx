@@ -13,6 +13,7 @@ import {
   updateThreadResultId,
 } from "../mutations";
 import {
+  processMixedMedia,
   processMultipleMedia,
   processSingleMedia,
 } from "../utils/media-processor";
@@ -20,30 +21,13 @@ import {
 /**
  * Threads API 업로드 처리 로직
  *
- * 처리 순서:
- * 1. 미디어 개수 확인 및 분기 처리
- *    ├─ 단일 미디어 또는 텍스트만: processSingleMedia() 사용
- *    └─ 다중 미디어 (2개 이상):
- *        ├─ 다중 이미지: processMultipleImages() 사용
- *        └─ 다중 비디오: processMultipleVideos() 사용
- *
- * 2. 다중 미디어 처리 과정:
- *    a) 각 미디어별로 개별 컨테이너 생성 (is_carousel_item=true)
- *    b) 모든 컨테이너 ID를 children으로 Carousel 컨테이너 생성
- *    c) Carousel 컨테이너로 게시
- *
- * 3. 단일 미디어 처리 과정:
- *    a) 기존 threads() 함수로 컨테이너 생성
- *    b) threadsPublish() 함수로 게시
- *
- * 4. 데이터베이스 처리:
- *    a) 로컬 DB에 먼저 저장 (resultId 빈 값)
- *    b) Threads API 호출 후 resultId 업데이트
- *    c) 실패 시 에러 상태로 표시
- *
- * 5. 사용자 인사이트 저장:
- *    a) Threads 업로드 완료 후 사용자 인사이트 가져오기
- *    b) 시계열 데이터와 총계 데이터를 DB에 저장
+ * 6가지 경우의 수 처리:
+ * 1. 텍스트만: processSingleMedia()
+ * 2. 이미지 1개 + 텍스트: processSingleMedia()
+ * 3. 동영상 1개 + 텍스트: processSingleMedia()
+ * 4. 이미지 2개 이상 + 텍스트: processMultipleMedia()
+ * 5. 동영상 2개 이상 + 텍스트: processMultipleMedia()
+ * 6. 이미지 + 동영상 혼합 2개 이상 + 텍스트: processMixedMedia()
  */
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
@@ -95,7 +79,6 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // 토큰 정보 가져오기
-  console.log("send-to-thread: getThreadsAccessToken 호출");
   const { accessToken, expiresAt, snsId } = await getThreadsAccessToken(
     client,
     user.id,
@@ -105,18 +88,27 @@ export async function action({ request }: ActionFunctionArgs) {
     return data({ error: "Access token not found" }, { status: 401 });
   }
 
-  // 미디어 개수에 따른 분기 처리
-  const hasMultipleImages = imageUrls && imageUrls.split(",").length > 1;
-  const hasMultipleVideos = videoUrls && videoUrls.split(",").length > 1;
-  const hasMultipleMedia = hasMultipleImages || hasMultipleVideos;
+  // 미디어 개수 및 타입 분석
+  const imageCount =
+    (imageUrl ? 1 : 0) + (imageUrls ? imageUrls.split(",").length : 0);
+  const videoCount =
+    (videoUrl ? 1 : 0) + (videoUrls ? videoUrls.split(",").length : 0);
+  const totalMediaCount = imageCount + videoCount;
+  const hasImages = imageCount > 0;
+  const hasVideos = videoCount > 0;
+  const hasMultipleImages = imageCount > 1;
+  const hasMultipleVideos = videoCount > 1;
+  const hasMixedMedia = hasImages && hasVideos;
 
-  console.log("=== 미디어 처리 분기 ===");
+  console.log("=== 미디어 분석 결과 ===");
+  console.log("이미지 개수:", imageCount);
+  console.log("동영상 개수:", videoCount);
+  console.log("총 미디어 개수:", totalMediaCount);
+  console.log("이미지 있음:", hasImages);
+  console.log("동영상 있음:", hasVideos);
   console.log("다중 이미지:", hasMultipleImages);
-  console.log("다중 비디오:", hasMultipleVideos);
-  console.log("다중 미디어:", hasMultipleMedia);
-
-  // 미디어 처리 분기 (백그라운드에서만 실행)
-  let processingResult: { containerId: string; threadId: string };
+  console.log("다중 동영상:", hasMultipleVideos);
+  console.log("혼합 미디어:", hasMixedMedia);
 
   // 키워드와 속성 데이터 파싱
   const keywordsArray = keywords ? keywords.split(",") : [];
@@ -141,7 +133,7 @@ export async function action({ request }: ActionFunctionArgs) {
     thread: text,
     targetType: "thread",
     sendFlag: false, // 아직 전송되지 않음
-    resultId: "", // 빈 값으로 시작
+    resultId: "UPLOADING", // 빈 값으로 시작
     profileId: user.id,
     keywords: keywordsArray,
     properties,
@@ -191,31 +183,55 @@ export async function action({ request }: ActionFunctionArgs) {
     try {
       console.log("=== 백그라운드 Threads API 호출 시작 ===");
 
-      // 미디어 처리 분기
-      if (hasMultipleMedia) {
-        // 다중 미디어 처리
-        console.log("=== 다중 미디어 처리 시작 ===");
-        if (hasMultipleImages) {
-          processingResult = await processMultipleMedia(
-            snsId,
-            text,
-            accessToken,
-            imageUrls!,
-            "image",
-          );
-        } else {
-          processingResult = await processMultipleMedia(
-            snsId,
-            text,
-            accessToken,
-            videoUrls!,
-            "video",
-          );
-        }
-      } else {
-        // 단일 미디어 또는 텍스트만 있는 경우
-        console.log("=== 단일 미디어 또는 텍스트 처리 ===");
+      let processingResult: { containerId: string; threadId: string };
+
+      // 6가지 경우의 수에 따른 분기 처리
+      if (totalMediaCount === 0) {
+        // 1. 텍스트만
+        console.log("=== 케이스 1: 텍스트만 ===");
         processingResult = await processSingleMedia(
+          snsId,
+          text,
+          accessToken,
+          undefined,
+          undefined,
+        );
+      } else if (totalMediaCount === 1) {
+        // 2. 이미지 1개 또는 동영상 1개
+        console.log("=== 케이스 2-3: 단일 미디어 ===");
+        processingResult = await processSingleMedia(
+          snsId,
+          text,
+          accessToken,
+          imageUrl,
+          videoUrl,
+        );
+      } else if (hasMultipleImages && !hasVideos) {
+        // 4. 이미지 2개 이상
+        console.log("=== 케이스 4: 다중 이미지 ===");
+        const allImageUrls = [imageUrl, imageUrls].filter(Boolean).join(",");
+        processingResult = await processMultipleMedia(
+          snsId,
+          text,
+          accessToken,
+          allImageUrls,
+          "image",
+        );
+      } else if (hasMultipleVideos && !hasImages) {
+        // 5. 동영상 2개 이상
+        console.log("=== 케이스 5: 다중 동영상 ===");
+        const allVideoUrls = [videoUrl, videoUrls].filter(Boolean).join(",");
+        processingResult = await processMultipleMedia(
+          snsId,
+          text,
+          accessToken,
+          allVideoUrls,
+          "video",
+        );
+      } else if (hasMixedMedia) {
+        // 6. 이미지 + 동영상 혼합
+        console.log("=== 케이스 6: 혼합 미디어 ===");
+        processingResult = await processMixedMedia(
           snsId,
           text,
           accessToken,
@@ -223,6 +239,16 @@ export async function action({ request }: ActionFunctionArgs) {
           videoUrl,
           imageUrls,
           videoUrls,
+        );
+      } else {
+        // 예상치 못한 경우 (fallback)
+        console.log("=== 예상치 못한 케이스, 단일 미디어로 처리 ===");
+        processingResult = await processSingleMedia(
+          snsId,
+          text,
+          accessToken,
+          imageUrl,
+          videoUrl,
         );
       }
 

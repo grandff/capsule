@@ -1,61 +1,77 @@
 import type { ActionFunctionArgs } from "react-router";
 
 import { data } from "react-router";
-import { z } from "zod";
 
+import { ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES } from "~/constants";
 import makeServerClient from "~/core/lib/supa-client.server";
 
-const uploadSchema = z.object({
-  file: z.instanceof(File),
-});
+import {
+  compressMedia,
+  isImageFile,
+  isVideoFile,
+  needsCompression,
+} from "../utils/media-compressor";
+
+const MAX_IMAGE_SIZE = 6 * 1024 * 1024; // 6MB
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
 
 export async function action({ request }: ActionFunctionArgs) {
-  // POST 요청만 허용
   if (request.method !== "POST") {
     return data({ error: "Method not allowed" }, { status: 405 });
   }
 
   try {
-    const [client, headers] = makeServerClient(request);
-
-    // 사용자 인증 확인
+    const [client] = makeServerClient(request);
     const {
       data: { user },
       error: authError,
     } = await client.auth.getUser();
+
     if (authError || !user) {
-      return data({ error: "인증이 필요합니다." }, { status: 401 });
+      return data({ error: "Unauthorized" }, { status: 401 });
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    let file = formData.get("file") as File;
 
     if (!file) {
-      return data({ error: "파일이 필요합니다." }, { status: 400 });
+      return data({ error: "파일이 없습니다." }, { status: 400 });
     }
 
-    // 파일 크기 및 타입 검증
-    const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8MB
-    const MAX_VIDEO_SIZE = 1024 * 1024 * 1024; // 1GB
-    const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
-    const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime"];
-
-    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+    // 파일 타입 확인
+    const isImage = isImageFile(file);
+    const isVideo = isVideoFile(file);
 
     if (!isImage && !isVideo) {
-      return data(
-        {
-          error:
-            "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG / 동영상: MP4, MOV)",
-        },
-        { status: 400 },
-      );
+      return data({ error: "지원하지 않는 파일 형식입니다." }, { status: 400 });
     }
 
+    // 압축이 필요한지 확인하고 압축 수행 (이미지만 서버사이드에서 압축)
+    let compressedBuffer: Buffer | null = null;
+    let isCompressed = false;
+
+    if (isImage && needsCompression(file)) {
+      try {
+        console.log(
+          `이미지 압축 시작: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`,
+        );
+        compressedBuffer = await compressMedia(file);
+        isCompressed = true;
+        console.log(
+          `이미지 압축 완료: ${file.name} (${(compressedBuffer.length / 1024 / 1024).toFixed(2)}MB)`,
+        );
+      } catch (compressionError) {
+        console.warn("이미지 압축 실패, 원본 파일 사용:", compressionError);
+        // 압축 실패 시 원본 파일 사용
+      }
+    }
+
+    // 압축된 파일이 있으면 압축된 크기로 검증, 없으면 원본 크기로 검증
+    const fileSize = compressedBuffer ? compressedBuffer.length : file.size;
     const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
-    if (file.size > maxSize) {
-      const maxSizeMB = isImage ? "8MB" : "1GB";
+
+    if (fileSize > maxSize) {
+      const maxSizeMB = isImage ? "6MB" : "500MB";
       return data(
         {
           error: `파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`,
@@ -64,60 +80,60 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    // 폴더 경로 생성 (userId/yyyy/mm/dd)
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const folderPath = `${user.id}/${year}/${month}/${day}`;
-
-    // 파일명에 타임스탬프 추가하여 중복 방지
+    // 올바른 버킷 구조: {user.id}/{year}/{month}/{day}/{fileName}
+    const now = new Date();
+    const year = now.getFullYear().toString();
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+    const day = now.getDate().toString().padStart(2, "0");
     const timestamp = Date.now();
-    const fileExtension = file.name.split(".").pop();
-    const fileName = `${timestamp}.${fileExtension}`;
-    const fullPath = `${folderPath}/${fileName}`;
+    const fileName = `${timestamp}-${file.name}`;
+    const fullPath = `${user.id}/${year}/${month}/${day}/${fileName}`;
 
-    // Supabase Storage에 업로드
-    const { data: uploadData, error: uploadError } = await client.storage
+    console.log(`파일 업로드 경로: ${fullPath}`);
+
+    // Supabase Storage에 업로드 (압축된 파일이 있으면 압축된 파일 사용)
+    let uploadData: File | Buffer;
+
+    if (compressedBuffer) {
+      // 압축된 Buffer를 File 객체로 변환
+      const compressedFile = new File([compressedBuffer], file.name, {
+        type: file.type,
+        lastModified: Date.now(),
+      });
+      uploadData = compressedFile;
+    } else {
+      uploadData = file;
+    }
+
+    const { data: uploadResult, error: uploadError } = await client.storage
       .from("upload-medias")
-      .upload(fullPath, file, {
+      .upload(fullPath, uploadData, {
         cacheControl: "3600",
         upsert: false,
       });
 
     if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      return data(
-        {
-          error: `파일 업로드 실패: ${uploadError.message}`,
-        },
-        { status: 500 },
-      );
+      console.error("Upload error:", uploadError);
+      return data({ error: "파일 업로드에 실패했습니다." }, { status: 500 });
     }
 
     // 공개 URL 생성
-    const {
-      data: { publicUrl },
-    } = client.storage.from("upload-medias").getPublicUrl(fullPath);
+    const { data: urlData } = client.storage
+      .from("upload-medias")
+      .getPublicUrl(fullPath);
 
-    return data(
-      {
-        success: true,
-        url: publicUrl,
-        path: fullPath,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      },
-      { headers },
-    );
+    return data({
+      success: true,
+      url: urlData.publicUrl,
+      path: fullPath,
+      fileName: fileName,
+      fileType: isImage ? "image" : "video",
+      compressed: isCompressed,
+      originalSize: file.size,
+      compressedSize: compressedBuffer ? compressedBuffer.length : file.size,
+    });
   } catch (error) {
-    console.error("Upload API error:", error);
-    return data(
-      {
-        error: "파일 업로드 중 오류가 발생했습니다.",
-      },
-      { status: 500 },
-    );
+    console.error("Upload media error:", error);
+    return data({ error: "서버 오류가 발생했습니다." }, { status: 500 });
   }
 }

@@ -4,12 +4,21 @@ import { useRef, useState } from "react";
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 
+import {
+  compressVideo,
+  isImageFile,
+  isVideoFile,
+  needsCompression,
+} from "../utils/media-compressor";
+
 interface UploadedFile {
   id: string;
   file: File;
   preview: string;
   type: "image" | "video";
   size: number;
+  isCompressed?: boolean;
+  originalSize?: number;
 }
 
 interface FileUploadProps {
@@ -32,7 +41,7 @@ const ALLOWED_VIDEO_TYPES = [
   "video/quicktime",
 ];
 const DEFAULT_MAX_FILES = 20;
-const DEFAULT_MAX_FILE_SIZE = 50; // 50MB
+const DEFAULT_MAX_FILE_SIZE = 500; // 500MB (동영상 최대 크기)
 
 export default function FileUpload({
   files,
@@ -42,6 +51,7 @@ export default function FileUpload({
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string>("");
+  const [compressing, setCompressing] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 파일 유효성 검사
@@ -52,18 +62,47 @@ export default function FileUpload({
     }
 
     // 파일 타입 검사
-    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+    const isValidImage = isImageFile(file);
+    const isValidVideo = isVideoFile(file);
 
-    if (!isImage && !isVideo) {
+    if (!isValidImage && !isValidVideo) {
       return "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG, WebP / 동영상: MP4, MOV, AVI)";
     }
 
     return null;
   };
 
+  // 동영상 압축 처리
+  const processVideoCompression = async (file: File): Promise<File> => {
+    if (isVideoFile(file) && needsCompression(file)) {
+      try {
+        setCompressing(file.name);
+        console.log(`동영상 압축 시작: ${file.name}`);
+
+        const compressedFile = await compressVideo(file, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          bitrate: "1000k",
+          fps: 30,
+          format: "mp4",
+        });
+
+        console.log(`동영상 압축 완료: ${file.name}`);
+        return compressedFile;
+      } catch (error) {
+        console.error("동영상 압축 실패:", error);
+        // 압축 실패 시 원본 파일 반환
+        return file;
+      } finally {
+        setCompressing(null);
+      }
+    }
+
+    return file;
+  };
+
   // 파일 추가
-  const addFiles = (newFiles: FileList | File[]) => {
+  const addFiles = async (newFiles: FileList | File[]) => {
     setError("");
 
     if (files.length + newFiles.length > maxFiles) {
@@ -73,31 +112,37 @@ export default function FileUpload({
 
     const validFiles: UploadedFile[] = [];
 
-    Array.from(newFiles).forEach((file) => {
+    for (const file of Array.from(newFiles)) {
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
-        return;
+        continue;
       }
 
-      const fileType = ALLOWED_IMAGE_TYPES.includes(file.type)
-        ? "image"
-        : "video";
-      const preview =
-        fileType === "image"
-          ? URL.createObjectURL(file)
-          : URL.createObjectURL(file);
+      try {
+        // 동영상인 경우 압축 처리
+        const processedFile = await processVideoCompression(file);
 
-      const uploadedFile: UploadedFile = {
-        id: `${Date.now()}-${Math.random()}`,
-        file,
-        preview,
-        type: fileType,
-        size: file.size,
-      };
+        const fileType = isImageFile(file) ? "image" : "video";
+        const preview = URL.createObjectURL(processedFile);
 
-      validFiles.push(uploadedFile);
-    });
+        const uploadedFile: UploadedFile = {
+          id: `${Date.now()}-${Math.random()}`,
+          file: processedFile,
+          preview,
+          type: fileType,
+          size: processedFile.size,
+          isCompressed: processedFile.size !== file.size,
+          originalSize:
+            processedFile.size !== file.size ? file.size : undefined,
+        };
+
+        validFiles.push(uploadedFile);
+      } catch (error) {
+        console.error("파일 처리 오류:", error);
+        setError("파일 처리 중 오류가 발생했습니다.");
+      }
+    }
 
     if (validFiles.length > 0) {
       onFilesChange([...files, ...validFiles]);
@@ -184,6 +229,9 @@ export default function FileUpload({
               이미지 (JPG, PNG, WebP) 또는 동영상 (MP4, MOV, AVI) 최대{" "}
               {maxFileSize}MB
             </p>
+            <p className="text-xs text-blue-600 dark:text-blue-400">
+              대용량 동영상은 자동으로 압축됩니다
+            </p>
           </div>
           <Button
             type="button"
@@ -191,8 +239,9 @@ export default function FileUpload({
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             className="mt-2"
+            disabled={compressing !== null}
           >
-            파일 선택
+            {compressing ? `압축 중... (${compressing})` : "파일 선택"}
           </Button>
         </div>
       </div>
@@ -201,6 +250,15 @@ export default function FileUpload({
       {error && (
         <div className="rounded-md bg-red-50 p-3 dark:bg-red-900/20">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
+      {/* 압축 중 메시지 */}
+      {compressing && (
+        <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
+          <p className="text-sm text-blue-600 dark:text-blue-400">
+            동영상 압축 중: {compressing}
+          </p>
         </div>
       )}
 
@@ -252,6 +310,12 @@ export default function FileUpload({
                       <p className="truncate font-medium">{file.file.name}</p>
                       <p className="text-gray-300">
                         {formatFileSize(file.size)}
+                        {file.isCompressed && file.originalSize && (
+                          <span className="ml-1 text-green-400">
+                            (압축됨: {formatFileSize(file.originalSize)} →{" "}
+                            {formatFileSize(file.size)})
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -265,6 +329,15 @@ export default function FileUpload({
                     <VideoIcon className="size-4 text-white drop-shadow" />
                   )}
                 </div>
+
+                {/* 압축 표시 */}
+                {file.isCompressed && (
+                  <div className="absolute top-1 right-1">
+                    <Badge variant="secondary" className="text-xs">
+                      압축됨
+                    </Badge>
+                  </div>
+                )}
               </div>
             ))}
           </div>

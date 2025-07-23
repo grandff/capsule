@@ -27,6 +27,12 @@ export default {
       "/sitemap.xml",
       "/robots.txt",
       //...urls,
+
+      "/write/today",
+      "/dashboard",
+
+      // 기타 정적 페이지들
+      "/faq",
     ];
   },
   presets: [

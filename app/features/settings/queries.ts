@@ -18,7 +18,6 @@ export async function getThreadsAccessToken(
     .single();
 
   if (error) {
-    console.error("Error fetching access token:", error);
     return {
       accessToken: null,
       expiresAt: null,
@@ -46,7 +45,6 @@ export async function getThreadsAccessToken(
       updatedAt: data.updated_at,
     };
   } catch (error) {
-    console.error("Error decrypting token:", error);
     return {
       accessToken: null,
       expiresAt: null,
@@ -96,7 +94,6 @@ export async function getSetting(
     .single();
 
   if (error) {
-    console.log("설정 조회 오류:", error);
     return null;
   }
 

@@ -33,7 +33,7 @@ BEGIN
         updated_at
     ) VALUES (
         NEW.profile_id,
-        'dark',
+        'system',
         'default',
         false,
         NOW(),

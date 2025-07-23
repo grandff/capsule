@@ -1,7 +1,7 @@
 import type { PromptTemplate } from "../schema";
 import type { Route } from "./+types/write-today";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { RECOMMEND_TEXT } from "~/constants";
@@ -100,8 +100,25 @@ export default function WriteToday({ loaderData }: Route.ComponentProps) {
     loaderData.recommendation || "",
   );
   const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(false);
 
   const navigate = useNavigate();
+  const moodSelectionRef = useRef<HTMLDivElement>(null);
+
+  // 분위기 선택 영역이 나타날 때 스크롤
+  useEffect(() => {
+    if (showMoodSelection && moodSelectionRef.current) {
+      // 애니메이션이 완료된 후 스크롤 (0.5초 후)
+      const timer = setTimeout(() => {
+        moodSelectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showMoodSelection]);
 
   // 분위기 선택 핸들러
   const handleMoodToggle = (mood: string) => {
@@ -210,19 +227,31 @@ export default function WriteToday({ loaderData }: Route.ComponentProps) {
   // 분위기 선택 버튼 핸들러
   const handleMoodButtonClick = async () => {
     if (!showMoodSelection) {
-      // 토큰 확인
-      const result = await checkThreadsToken();
+      // 토큰 확인 시작 - spinner 표시
+      setIsCheckingToken(true);
 
-      if (!result.success) {
-        setTokenAlertMessage(result.message || "토큰 확인에 실패했습니다.");
+      try {
+        // 토큰 확인
+        const result = await checkThreadsToken();
+
+        if (!result.success) {
+          setTokenAlertMessage(result.message || "토큰 확인에 실패했습니다.");
+          setShowTokenAlert(true);
+          return;
+        }
+
+        // 토큰이 있으면 홍보글 설정 화면으로 이동
+        setShowMoodSelection(true);
+        setIsTextReadonly(true);
+        setMoodButtonText("다시 작성하기");
+      } catch (error) {
+        console.error("토큰 확인 중 오류:", error);
+        setTokenAlertMessage("토큰 확인 중 오류가 발생했습니다.");
         setShowTokenAlert(true);
-        return;
+      } finally {
+        // 토큰 확인 완료 - spinner 해제
+        setIsCheckingToken(false);
       }
-
-      // 토큰이 있으면 홍보글 설정 화면으로 이동
-      setShowMoodSelection(true);
-      setIsTextReadonly(true);
-      setMoodButtonText("다시 작성하기");
     } else {
       setShowMoodSelection(false);
       setIsTextReadonly(false);
@@ -236,7 +265,7 @@ export default function WriteToday({ loaderData }: Route.ComponentProps) {
       <div className="">
         <div className="mx-auto max-w-4xl px-6 py-8">
           <h1 className="text-center text-3xl font-bold text-gray-900 dark:text-white">
-            오늘의 이야기
+            오늘의 브랜딩
           </h1>
           <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
             내 이야기를 매력적인 홍보글로 변환해보세요!
@@ -258,12 +287,14 @@ export default function WriteToday({ loaderData }: Route.ComponentProps) {
         isTextReadonly={isTextReadonly}
         moodButtonText={moodButtonText}
         onMoodButtonClick={handleMoodButtonClick}
+        isCheckingToken={isCheckingToken}
         validationConfig={DEFAULT_VALIDATION_CONFIG}
       />
 
       {/* 분위기 선택 영역 */}
       {showMoodSelection && (
         <div
+          ref={moodSelectionRef}
           className="border-t border-gray-200 bg-white/90 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/90"
           style={{
             animation: "slideDown 0.5s ease-out forwards",

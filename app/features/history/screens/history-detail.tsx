@@ -83,6 +83,14 @@ export default function HistoryDetail({ loaderData }: Route.ComponentProps) {
     }
   }, [fetcher.state, fetcher.data]);
 
+  // 새로고침 핸들러
+  const handleRefresh = () => {
+    fetcher.submit(
+      { threadId: thread.thread_id, resultId: thread.result_id ?? "" },
+      { method: "post", action: "/api/history/update-insights" },
+    );
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <ToastContainer />
@@ -96,21 +104,19 @@ export default function HistoryDetail({ loaderData }: Route.ComponentProps) {
           <ThreadContent thread={thread} />
 
           {/* 통계 정보 */}
-          <fetcher.Form method="post" action="/api/history/update-insights">
-            <input type="hidden" name="threadId" value={thread.thread_id} />
-            <ThreadStats
-              thread={thread}
-              followerChange={{
-                currentFollowers: 0,
-                baselineFollowers: 0,
-                followerChange: loaderData.followerChange,
-                isPositive: loaderData.followerChange > 0,
-                isNegative: loaderData.followerChange < 0,
-                isNeutral: loaderData.followerChange === 0,
-              }}
-              isUpdating={fetcher.state === "submitting"}
-            />
-          </fetcher.Form>
+          <ThreadStats
+            thread={thread}
+            followerChange={{
+              currentFollowers: 0,
+              baselineFollowers: 0,
+              followerChange: loaderData.followerChange,
+              isPositive: loaderData.followerChange > 0,
+              isNegative: loaderData.followerChange < 0,
+              isNeutral: loaderData.followerChange === 0,
+            }}
+            isUpdating={fetcher.state === "submitting"}
+            onRefresh={handleRefresh}
+          />
 
           {/* 댓글 */}
           <CommentsSection resultId={thread.result_id} />

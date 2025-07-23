@@ -14,6 +14,7 @@ interface TextInputSectionProps {
   isTextReadonly: boolean;
   moodButtonText: string;
   onMoodButtonClick: () => void;
+  isCheckingToken?: boolean;
   validationConfig?: typeof DEFAULT_VALIDATION_CONFIG;
 }
 
@@ -23,6 +24,7 @@ export function TextInputSection({
   isTextReadonly,
   moodButtonText,
   onMoodButtonClick,
+  isCheckingToken = false,
   validationConfig = DEFAULT_VALIDATION_CONFIG,
 }: TextInputSectionProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -91,14 +93,21 @@ export function TextInputSection({
         <div className="mt-6 flex justify-center">
           <Button
             onClick={onMoodButtonClick}
-            disabled={!canProceed}
+            disabled={!canProceed || isCheckingToken}
             className={`px-8 py-5 text-lg font-medium transition-all duration-200 ${
-              canProceed
+              canProceed && !isCheckingToken
                 ? "bg-blue-600 text-white shadow-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                 : "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-600 dark:text-gray-400"
             }`}
           >
-            {moodButtonText}
+            {isCheckingToken ? (
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                토큰 확인 중...
+              </div>
+            ) : (
+              moodButtonText
+            )}
           </Button>
         </div>
       </div>

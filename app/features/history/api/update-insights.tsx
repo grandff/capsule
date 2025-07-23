@@ -74,10 +74,15 @@ function parseInsightsData(
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const threadId = formData.get("threadId") as string;
+  const resultId = formData.get("resultId") as string;
 
   if (!threadId) {
     return data({ error: "threadId is required" }, { status: 400 });
   }
+  if (!resultId) {
+    return data({ error: "resultId is required" }, { status: 400 });
+  }
+
   const threadIdNum = Number(threadId);
   if (isNaN(threadIdNum)) {
     return data({ error: "threadId must be a number" }, { status: 400 });
@@ -104,28 +109,48 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    // 1. 먼저 쓰레드 정보 조회
-    const { data: thread, error: threadError } = await client
-      .from("threads")
-      .select("thread_id, result_id, profile_id")
-      .eq("thread_id", threadIdNum)
-      .eq("profile_id", userId)
-      .single();
-
-    if (threadError || !thread) {
-      return data({ error: "Thread not found" }, { status: 404 });
-    }
-
-    // 2. result_id가 없으면 쓰레드에 업로드되지 않은 상태
-    if (!thread.result_id || thread.result_id === "ERROR") {
+    if (resultId === "UPLOADING") {
       return data(
         {
           success: false,
-          message: "Thread not uploaded to Threads yet",
+          message: "쓰레드가 업로드 중입니다.",
           threadStatus: "not_uploaded",
         },
         { status: 200 },
       );
+    }
+
+    // 1. 쓰레드에 현재 글 조회해보기
+    const retrieveUrl =
+      `${THREAD_END_POINT_URL}/${resultId}?` +
+      `fields=id&` +
+      `access_token=${accessToken}`;
+
+    const retrieveResponse = await fetch(retrieveUrl);
+    const retrieveData = await retrieveResponse.json();
+
+    // 게시글을 찾을 수 없는 경우
+    if (
+      retrieveData.error &&
+      retrieveData.error.code === 100 &&
+      retrieveData.error.error_subcode === 33
+    ) {
+      await client
+        .from("threads")
+        .update({ result_id: "DELETED" })
+        .eq("thread_id", threadIdNum);
+      console.log("게시글을 찾을 수 없음", retrieveData);
+      return data(
+        {
+          success: false,
+          message: "이미 삭제된 쓰레드입니다.",
+          threadStatus: "deleted",
+        },
+        { status: 200 },
+      );
+    } else {
+      // 디버깅용.. 나중에 삭제하기
+      console.log("게시글을 찾음", retrieveData);
     }
 
     // 3. Threads API에서 insight 가져오기
@@ -135,7 +160,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     const response = await fetch(
-      `${THREAD_END_POINT_URL}/${thread.result_id}/insights?${params.toString()}`,
+      `${THREAD_END_POINT_URL}/${resultId}/insights?${params.toString()}`,
       {
         method: "GET",
       },

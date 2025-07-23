@@ -49,7 +49,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     throw new Response("Unauthorized", { status: 401 });
   }
   const userId = user.id;
-  console.log("[get-threads-replies] getThreadsAccessToken 호출");
   const { accessToken, expiresAt } = await getThreadsAccessToken(
     client,
     userId,

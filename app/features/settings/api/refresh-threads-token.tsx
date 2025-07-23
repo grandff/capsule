@@ -18,7 +18,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   // 토큰 정보 조회
-  console.log("[refresh-threads-token] getThreadsAccessToken 호출");
   const { accessToken, expiresAt, updatedAt } = await getThreadsAccessToken(
     client,
     user.id,

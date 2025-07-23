@@ -7,7 +7,7 @@ import {
   Repeat,
   Users,
 } from "lucide-react";
-import { useFetcher } from "react-router";
+import { useEffect, useState } from "react";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -28,13 +28,68 @@ interface ThreadStatsProps {
     isNeutral: boolean;
   } | null;
   isUpdating?: boolean;
+  onRefresh?: () => void;
 }
 
 export function ThreadStats({
   thread,
   followerChange,
   isUpdating,
+  onRefresh,
 }: ThreadStatsProps) {
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [isInCooldown, setIsInCooldown] = useState(false);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
+
+  // 쿨다운 타이머
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isInCooldown && cooldownSeconds > 0) {
+      interval = setInterval(() => {
+        setCooldownSeconds((prev) => {
+          if (prev <= 1) {
+            setIsInCooldown(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isInCooldown, cooldownSeconds]);
+
+  // isUpdating이 false로 변경되고 이전에 새로고침을 했었다면 쿨다운 시작
+  useEffect(() => {
+    if (!isUpdating && hasRefreshed) {
+      // 업데이트가 완료되면 쿨다운 시작
+      setIsInCooldown(true);
+      setCooldownSeconds(10);
+      setHasRefreshed(false); // 리셋
+    }
+  }, [isUpdating, hasRefreshed]);
+
+  // 새로고침 핸들러
+  const handleRefresh = () => {
+    if (!isInCooldown && !isUpdating && onRefresh) {
+      setHasRefreshed(true); // 새로고침 시작 표시
+      onRefresh();
+    }
+  };
+
+  // 버튼 비활성화 여부
+  const isDisabled = isUpdating || isInCooldown;
+
+  // 버튼 텍스트
+  const getButtonText = () => {
+    if (isUpdating) return "새로고침 중...";
+    if (isInCooldown) return `${cooldownSeconds}초 후 가능`;
+    return "새로고침";
+  };
+
   return (
     <Card className="dark:border-gray-700 dark:bg-gray-800">
       <CardHeader>
@@ -43,22 +98,19 @@ export function ThreadStats({
             <BarChart3 className="h-5 w-5" />
             성과 통계
           </CardTitle>
-          {/* fetcher.Form으로 Button을 감싼다 */}
-          {/* <fetcher.Form method="post" action="/api/history/update-insights"> */}
-          {/* <input type="hidden" name="threadId" value={thread.thread_id} /> */}
           <Button
-            type="submit"
+            type="button"
             size="sm"
             variant="outline"
-            disabled={isUpdating}
+            disabled={isDisabled}
+            onClick={handleRefresh}
             className="flex items-center gap-1"
           >
             <RefreshCw
               className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`}
             />
-            {isUpdating ? "새로고침 중..." : "새로고침"}
+            {getButtonText()}
           </Button>
-          {/* </fetcher.Form> */}
         </div>
       </CardHeader>
       <CardContent>

@@ -7,12 +7,21 @@ import {
   CardHeader,
   CardTitle,
 } from "~/core/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "~/core/components/ui/carousel";
 
 interface ThreadSettingsProps {
   thread: any;
 }
 
 export function ThreadSettings({ thread }: ThreadSettingsProps) {
+  const mediaFiles = thread.thread_media || [];
+
   return (
     <Card className="dark:border-gray-700 dark:bg-gray-800">
       <CardHeader>
@@ -70,6 +79,57 @@ export function ThreadSettings({ thread }: ThreadSettingsProps) {
             ))}
           </div>
         </div>
+
+        {/* 미디어 캐러셀 */}
+        {mediaFiles.length > 0 && (
+          <div>
+            <h4 className="mb-2 text-sm font-semibold dark:text-gray-200">
+              첨부 미디어
+            </h4>
+            <Carousel className="w-full">
+              <CarouselContent>
+                {mediaFiles.map((media: any, idx: number) => (
+                  <CarouselItem key={media.media_id || idx}>
+                    <div className="rounded-lg border border-gray-200 p-2 dark:border-gray-600">
+                      {media.media_type === "image" ? (
+                        <img
+                          src={media.public_url}
+                          alt={media.original_filename || `이미지 ${idx + 1}`}
+                          className="h-48 w-full rounded-md object-cover"
+                          loading="lazy"
+                        />
+                      ) : media.media_type === "video" ? (
+                        <video
+                          src={media.public_url}
+                          controls
+                          className="h-48 w-full rounded-md object-cover"
+                          preload="metadata"
+                        >
+                          <track kind="captions" />
+                          브라우저가 비디오를 지원하지 않습니다.
+                        </video>
+                      ) : null}
+                      <div className="mt-2 text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {media.original_filename}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {media.media_type === "image" ? "이미지" : "동영상"}
+                        </p>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {mediaFiles.length > 1 && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </>
+              )}
+            </Carousel>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

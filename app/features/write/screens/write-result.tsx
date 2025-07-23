@@ -2,7 +2,7 @@ import type { UploadedFile } from "../utils/file-upload-utils";
 import type { Route } from "./+types/write-result";
 
 import { useEffect, useRef, useState } from "react";
-import { useLoaderData, useNavigate } from "react-router";
+import { Form, useLoaderData, useNavigate } from "react-router";
 import { ToastContainer } from "react-toastify";
 import { z } from "zod";
 
@@ -306,7 +306,7 @@ export default function WriteResult() {
       </div>
 
       {/* Threads 업로드용 form (숨김) */}
-      <form
+      <Form
         ref={formRef}
         method="post"
         action="/api/write/send-to-thread"
@@ -329,7 +329,7 @@ export default function WriteResult() {
             value={uploadedFiles[0].preview}
           />
         )}
-      </form>
+      </Form>
     </div>
   );
 }

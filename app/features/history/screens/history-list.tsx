@@ -5,6 +5,7 @@ import { useRouteLoaderData } from "react-router";
 import { ToastContainer, toast } from "react-toastify";
 import { z } from "zod";
 
+import { LONG_TOAST_DURATION } from "~/constants";
 import { requireAuthentication } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
@@ -106,7 +107,7 @@ export default function HistoryList({ loaderData }: Route.ComponentProps) {
     ) {
       toast.success(
         `홍보글이 저장되었습니다. ${getPlatformDisplayName(loaderData.searchParams.platform)} 업로드가 진행 중입니다.`,
-        { autoClose: 5000 },
+        { autoClose: LONG_TOAST_DURATION },
       );
     }
   }, [loaderData.searchParams.upload, loaderData.searchParams.platform]);

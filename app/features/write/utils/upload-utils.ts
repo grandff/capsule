@@ -3,6 +3,12 @@ import type { UploadedFile } from "./file-upload-utils";
 import { toast } from "react-toastify";
 
 import {
+  ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
+  SHORT_TOAST_DURATION,
+} from "~/constants";
+
+import {
   extractFilePathFromUrl,
   uploadFileToStorage,
 } from "./file-upload-utils";
@@ -12,12 +18,12 @@ export async function handleCopy(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     toast.success("홍보글이 클립보드에 복사되었습니다!", {
-      autoClose: 3000,
+      autoClose: SHORT_TOAST_DURATION,
     });
     return true;
   } catch (error) {
     toast.error("복사에 실패했습니다.", {
-      autoClose: 3000,
+      autoClose: SHORT_TOAST_DURATION,
     });
     return false;
   }
@@ -46,20 +52,20 @@ export async function handleFileUpload(
 
   Array.from(files).forEach((file) => {
     // 파일 타입 체크
-    const isImage = ["image/jpeg", "image/png"].includes(file.type);
-    const isVideo = ["video/mp4", "video/quicktime"].includes(file.type);
+    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
 
     if (!isImage && !isVideo) {
       setUploadError(
-        "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG / 동영상: MP4, MOV)",
+        "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG, JPG / 동영상: MP4, MOV, QUICKTIME)",
       );
       return;
     }
 
     // 파일 크기 체크
-    const maxSize = isImage ? 8 * 1024 * 1024 : 1024 * 1024 * 1024;
+    const maxSize = isImage ? 6 * 1024 * 1024 : 500 * 1024 * 1024;
     if (file.size > maxSize) {
-      const maxSizeMB = isImage ? "8MB" : "1GB";
+      const maxSizeMB = isImage ? "6MB" : "500MB";
       setUploadError(
         `${file.name} 파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`,
       );
@@ -104,10 +110,14 @@ export async function handleFileUpload(
         ),
       );
 
-      toast.success(`${file.name} 업로드 완료!`);
+      toast.success(`${file.name} 업로드 완료!`, {
+        autoClose: SHORT_TOAST_DURATION,
+      });
     } catch (error) {
       console.error(`파일 업로드 실패: ${file.name}`, error);
-      toast.error(`${file.name} 업로드 실패`);
+      toast.error(`${file.name} 업로드 실패`, {
+        autoClose: SHORT_TOAST_DURATION,
+      });
 
       // 실패한 파일 제거
       setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id));
