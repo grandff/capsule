@@ -62,9 +62,9 @@ export async function handleAppRedirect(
       const settings = await getSetting(client, user.id);
       const theme = settings?.theme || "system";
       return redirect(`/dashboard?theme=${theme}`);
+    } else {
+      return redirect("/login");
     }
-    // 로그인 안된 사용자는 리다이렉트하지 않음
-    return null;
   }
 
   if (user) {
