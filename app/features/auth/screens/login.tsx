@@ -8,8 +8,8 @@
  */
 import type { Route } from "./+types/login";
 
-import { useRef } from "react";
-import { data, redirect, useFetcher } from "react-router";
+import { useEffect, useRef } from "react";
+import { data, redirect, useFetcher, useSearchParams } from "react-router";
 import { z } from "zod";
 
 import {
@@ -22,6 +22,15 @@ import {
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import { SignInButtons } from "../components/auth-login-buttons";
+
+// AppInterface 타입 정의
+declare global {
+  interface Window {
+    AppInterface?: {
+      postMessage: (message: string) => void;
+    };
+  }
+}
 
 /**
  * Meta function for the login page
@@ -126,11 +135,26 @@ export async function action({ request }: Route.ActionArgs) {
  * @param actionData - Data returned from the form action, including any errors
  */
 export default function Login({ actionData }: Route.ComponentProps) {
+  const [searchParams] = useSearchParams();
+
   // Reference to the form element for accessing form data
   const formRef = useRef<HTMLFormElement>(null);
 
   // Fetcher for submitting the email verification resend request
   const fetcher = useFetcher();
+
+  // 앱에 테마 정보 전송
+  useEffect(() => {
+    const theme = searchParams.get("theme");
+    if (theme && window.AppInterface) {
+      window.AppInterface.postMessage(
+        JSON.stringify({
+          type: "THEME_INIT",
+          theme: theme,
+        }),
+      );
+    }
+  }, [searchParams]);
 
   /**
    * Handler for resending email verification
