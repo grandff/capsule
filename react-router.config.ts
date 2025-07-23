@@ -27,7 +27,7 @@ export default {
       "/sitemap.xml",
       "/robots.txt",
       //...urls,
-
+      "/",
       "/dashboard/write/today",
       "/dashboard",
 

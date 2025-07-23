@@ -19,6 +19,7 @@
 import { CogIcon, HomeIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { useTheme } from "remix-themes";
 
 import LangSwitcher from "./lang-switcher";
 import ThemeSwitcher from "./theme-switcher";
@@ -210,6 +211,7 @@ export function NavigationBar({
 }) {
   // Get translation function for internationalization
   const { t } = useTranslation();
+  const [theme] = useTheme();
 
   return (
     <nav
@@ -220,7 +222,15 @@ export function NavigationBar({
       <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center justify-between py-3">
         {/* Application logo/title with link to home */}
         <Link to="/">
-          <h1 className="text-lg font-extrabold">{t("home.title")}</h1>
+          <img
+            src={
+              theme === "dark"
+                ? "/logos/logo_dark.png"
+                : "/logos/logo_light.png"
+            }
+            alt="Capsule"
+            className="h-8 w-auto"
+          />
         </Link>
 
         {/* Desktop navigation menu (hidden on mobile) */}

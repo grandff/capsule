@@ -9,6 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router";
+import { useTheme } from "remix-themes";
 
 import {
   Sidebar,
@@ -120,11 +121,21 @@ export default function DashboardSidebar({
     avatarUrl: string;
   };
 }) {
+  const [theme] = useTheme();
+
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
         <Link to="/dashboard">
-          <h1 className="text-lg font-extrabold">{t("home.title")}</h1>
+          <img
+            src={
+              theme === "dark"
+                ? "/logos/logo_dark.png"
+                : "/logos/logo_light.png"
+            }
+            alt="Capsule"
+            className="h-8 w-auto"
+          />
         </Link>
       </SidebarHeader>
       <SidebarContent>

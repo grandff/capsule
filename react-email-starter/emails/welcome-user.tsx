@@ -1,5 +1,3 @@
-import type * as React from "react";
-
 import {
   Body,
   Button,
@@ -15,7 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 
-const baseUrl = "https://capsule-three.vercel.app";
+const baseUrl = "https://capsule.diy";
 
 export const WelcomeUserEmail = () => {
   return (
@@ -40,15 +38,13 @@ export const WelcomeUserEmail = () => {
       >
         <Preview>단 3번의 클릭으로 끝내는 브랜드 홍보, Capsule</Preview>
         <Body className="bg-offwhite font-sans text-base">
-          {/* FIXME 로고 생성 후 수정*/}
-          <Heading>Capsule</Heading>
-          {/* <Img
-            src={`${baseUrl}/static/netlify-logo.png`}
-            width="184"
-            height="75"
-            alt="Netlify"
+          <Img
+            src={`${baseUrl}/logos/logo_light.png`}
+            // src={`https://localhost:5173/logos/logo_light.png`}
+            height="60"
+            alt="Capsule"
             className="mx-auto my-20"
-          /> */}
+          />
           <Container className="bg-white p-45">
             <Heading className="my-0 text-center leading-8">
               클릭만 하면 Capsule이 써드려요!
