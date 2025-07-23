@@ -27,9 +27,9 @@ export default {
       "/sitemap.xml",
       "/robots.txt",
       //...urls,
-      "/",
-      "/dashboard/write/today",
-      "/dashboard",
+      // "/",
+      // "/dashboard/write/today",
+      // "/dashboard",
 
       // 기타 정적 페이지들
       "/faq",
