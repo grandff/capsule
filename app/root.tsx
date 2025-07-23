@@ -104,46 +104,37 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // 사용자 설정 로드 (인증된 사용자인 경우에만)
   let userSettings = null;
-  let userId: string | null = null;
 
   try {
-    // 먼저 세션에서 사용자 ID 확인 (캐시 우선)
     const [client] = makeServerClient(request);
-
-    // 세션에서 사용자 ID를 가져오는 방법으로 변경
     const {
-      data: { session },
-    } = await client.auth.getSession();
+      data: { user },
+    } = await client.auth.getUser();
 
-    if (session?.user?.id) {
-      userId = session.user.id;
-
+    if (user) {
       // 캐시에서 먼저 확인
-      const cachedSettings = SettingsCache.get(userId);
+      const cachedSettings = SettingsCache.get(user.id);
 
       if (cachedSettings) {
         userSettings = cachedSettings;
       } else {
-        // 캐시가 없을 때만 사용자 정보와 설정을 가져옴
-        userSettings = await getSetting(client, userId);
+        userSettings = await getSetting(client, user.id);
 
         // 캐시에 저장
         if (userSettings) {
-          SettingsCache.set(userId, userSettings);
+          SettingsCache.set(user.id, userSettings);
         }
       }
 
       // 매일 최초 1회만 토큰 재발급 시도 (백그라운드에서 실행)
       // Promise.resolve()로 비동기 실행하여 페이지 로딩을 차단하지 않음
-      if (userId) {
-        Promise.resolve().then(async () => {
-          try {
-            await refreshToken(client, userId!);
-          } catch (error) {
-            console.error("토큰 재발급 중 오류:", error);
-          }
-        });
-      }
+      Promise.resolve().then(async () => {
+        try {
+          await refreshToken(client, user.id);
+        } catch (error) {
+          console.error("토큰 재발급 중 오류:", error);
+        }
+      });
     }
   } catch (error) {
     console.error("사용자 설정 로드 중 오류:", error);
