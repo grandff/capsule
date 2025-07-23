@@ -133,3 +133,5 @@ export const THREADS_RETRY_CONFIG = {
   maxRetries: 3,
   retryDelayMs: 30000,
 } as const;
+
+export const STATS_REFRESH_COOLDOWN = 30;

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { STATS_REFRESH_COOLDOWN } from "~/constants";
 import { Button } from "~/core/components/ui/button";
 import {
   Card,
@@ -67,7 +68,7 @@ export function ThreadStats({
     if (!isUpdating && hasRefreshed) {
       // 업데이트가 완료되면 쿨다운 시작
       setIsInCooldown(true);
-      setCooldownSeconds(10);
+      setCooldownSeconds(STATS_REFRESH_COOLDOWN);
       setHasRefreshed(false); // 리셋
     }
   }, [isUpdating, hasRefreshed]);

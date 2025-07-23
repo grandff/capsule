@@ -30,6 +30,7 @@ declare global {
     AppInterface?: {
       postMessage: (message: string) => void;
     };
+    waitForAppInterface: (callback: () => void) => void;
   }
 }
 
@@ -146,13 +147,15 @@ export default function Login({ actionData }: Route.ComponentProps) {
 
   // 앱에 테마 정보 전송
   useEffect(() => {
-    if (theme && window.AppInterface) {
-      window.AppInterface.postMessage(
-        JSON.stringify({
-          type: "THEME_INIT",
-          theme: theme,
-        }),
-      );
+    if (theme && window.waitForAppInterface) {
+      window.waitForAppInterface(() => {
+        window.AppInterface?.postMessage(
+          JSON.stringify({
+            type: "THEME_INIT",
+            theme: theme,
+          }),
+        );
+      });
     }
   }, [theme]);
 
