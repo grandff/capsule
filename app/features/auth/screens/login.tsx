@@ -9,7 +9,8 @@
 import type { Route } from "./+types/login";
 
 import { useEffect, useRef } from "react";
-import { data, redirect, useFetcher, useSearchParams } from "react-router";
+import { data, redirect, useFetcher } from "react-router";
+import { useTheme } from "remix-themes";
 import { z } from "zod";
 
 import {
@@ -135,7 +136,7 @@ export async function action({ request }: Route.ActionArgs) {
  * @param actionData - Data returned from the form action, including any errors
  */
 export default function Login({ actionData }: Route.ComponentProps) {
-  const [searchParams] = useSearchParams();
+  const [theme] = useTheme();
 
   // Reference to the form element for accessing form data
   const formRef = useRef<HTMLFormElement>(null);
@@ -145,7 +146,6 @@ export default function Login({ actionData }: Route.ComponentProps) {
 
   // 앱에 테마 정보 전송
   useEffect(() => {
-    const theme = searchParams.get("theme");
     if (theme && window.AppInterface) {
       window.AppInterface.postMessage(
         JSON.stringify({
@@ -154,7 +154,7 @@ export default function Login({ actionData }: Route.ComponentProps) {
         }),
       );
     }
-  }, [searchParams]);
+  }, [theme]);
 
   /**
    * Handler for resending email verification
