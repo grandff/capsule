@@ -227,7 +227,7 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
     setThemeError(null);
     console.log("테마 변경 시작:", newTheme);
 
-    // 1. remix-themes 상태 업데이트
+    // remix-themes 상태 업데이트만 수행
     if (newTheme === "system") {
       setTheme(null);
     } else if (newTheme === "light") {
@@ -235,25 +235,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
     } else {
       setTheme(Theme.DARK);
     }
-
-    // 2. 데이터베이스에 저장
-    const settingFormData = new FormData();
-    settingFormData.append("theme", newTheme);
-    settingFormData.append("fontSize", localSettings?.fontSize || "default");
-    settingFormData.append(
-      "colorBlindMode",
-      (localSettings?.colorBlindMode || false).toString(),
-    );
-
-    fetcher.submit(settingFormData, { method: "post" });
-
-    // 3. 즉시 UI 업데이트
-    const newSettings = {
-      theme: newTheme,
-      fontSize: localSettings?.fontSize || "default",
-      colorBlindMode: localSettings?.colorBlindMode || false,
-    };
-    handleSettingSave(newSettings);
 
     console.log("테마 변경 완료:", newTheme);
   };
@@ -263,18 +244,7 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
     setFontSizeError(null);
     console.log("글꼴 크기 변경 시작:", newFontSize);
 
-    // 1. 데이터베이스에 저장
-    const settingFormData = new FormData();
-    settingFormData.append("fontSize", newFontSize);
-    settingFormData.append("theme", localSettings?.theme || "dark");
-    settingFormData.append(
-      "colorBlindMode",
-      (localSettings?.colorBlindMode || false).toString(),
-    );
-
-    fetcher.submit(settingFormData, { method: "post" });
-
-    // 2. 즉시 UI 업데이트
+    // 즉시 UI 업데이트
     const newSettings = {
       fontSize: newFontSize,
       theme: localSettings?.theme || "dark",
@@ -290,15 +260,7 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
     setColorBlindError(null);
     console.log("색약 모드 변경 시작:", newColorBlindMode);
 
-    // 1. 데이터베이스에 저장
-    const settingFormData = new FormData();
-    settingFormData.append("colorBlindMode", newColorBlindMode.toString());
-    settingFormData.append("theme", localSettings?.theme || "dark");
-    settingFormData.append("fontSize", localSettings?.fontSize || "default");
-
-    fetcher.submit(settingFormData, { method: "post" });
-
-    // 2. 즉시 UI 업데이트
+    // 즉시 UI 업데이트
     const newSettings = {
       colorBlindMode: newColorBlindMode,
       theme: localSettings?.theme || "dark",
@@ -370,13 +332,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
         <p className="text-gray-600 dark:text-gray-400">
           나만의 맞춤형 경험을 위한 설정을 관리하세요
         </p>
-        {fetcher.state !== "idle" && (
-          <div className="mt-4 rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              설정을 저장하는 중...
-            </p>
-          </div>
-        )}
       </div>
 
       {/* 테마 설정 */}
@@ -400,7 +355,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
             <Button
               variant={theme === Theme.LIGHT ? "default" : "outline"}
               onClick={() => handleThemeChange("light")}
-              disabled={fetcher.state !== "idle"}
               className="flex h-auto w-full flex-col items-center gap-2 p-4"
             >
               <Sun className="h-6 w-6" />
@@ -411,7 +365,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
             <Button
               variant={theme === Theme.DARK ? "default" : "outline"}
               onClick={() => handleThemeChange("dark")}
-              disabled={fetcher.state !== "idle"}
               className="flex h-auto w-full flex-col items-center gap-2 p-4"
             >
               <Moon className="h-6 w-6" />
@@ -422,7 +375,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
             <Button
               variant={theme === null ? "default" : "outline"}
               onClick={() => handleThemeChange("system")}
-              disabled={fetcher.state !== "idle"}
               className="flex h-auto w-full flex-col items-center gap-2 p-4"
             >
               <Monitor className="h-6 w-6" />
@@ -464,7 +416,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
               variant={
                 localSettings?.fontSize === "default" ? "default" : "outline"
               }
-              disabled={fetcher.state !== "idle"}
               className="flex h-auto flex-col items-center gap-2 p-4"
             >
               <span className="text-base font-medium">기본</span>
@@ -476,10 +427,9 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
               variant={
                 localSettings?.fontSize === "large" ? "default" : "outline"
               }
-              disabled={fetcher.state !== "idle"}
               className="flex h-auto flex-col items-center gap-2 p-4"
             >
-              <span className="text-lg font-medium">크게</span>
+              <span className="text-base font-medium">크게</span>
               <span className="text-xs text-gray-500">18px</span>
             </Button>
 
@@ -488,7 +438,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
               variant={
                 localSettings?.fontSize === "larger" ? "default" : "outline"
               }
-              disabled={fetcher.state !== "idle"}
               className="flex h-auto flex-col items-center gap-2 p-4"
             >
               <span className="text-xl font-medium">더 크게</span>
@@ -554,7 +503,6 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
                 handleColorBlindModeChange(!localSettings?.colorBlindMode)
               }
               variant={localSettings?.colorBlindMode ? "default" : "outline"}
-              disabled={fetcher.state !== "idle"}
               className="flex items-center gap-2"
             >
               {localSettings?.colorBlindMode ? (
@@ -666,23 +614,9 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
               onOpenChange={setShowDeleteDialog}
             >
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  className="w-full"
-                  disabled={fetcher.state !== "idle"}
-                >
-                  {fetcher.state !== "idle" ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      탈퇴 처리 중...
-                    </>
-                  ) : (
-                    <>
-                      <UserX className="mr-2 h-4 w-4" />
-                      회원탈퇴
-                    </>
-                  )}
+                <Button variant="destructive" size="lg" className="w-full">
+                  <UserX className="mr-2 h-4 w-4" />
+                  회원탈퇴
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
