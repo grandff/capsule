@@ -15,6 +15,7 @@
  */
 import type { Route } from "./+types/sentry";
 
+import * as Sentry from "@sentry/react-router";
 import { Form } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
@@ -73,6 +74,16 @@ export function action() {
  * @returns React component for testing Sentry error monitoring
  */
 export default function TriggerError() {
+  // 클라이언트 사이드 에러 핸들러
+  const handleClientError = () => {
+    throw new Error("This is a client-side test error for Sentry");
+  };
+
+  // Sentry에 직접 에러 캐치
+  const handleSentryError = () => {
+    Sentry.captureException(new Error("This is a Sentry captured error"));
+  };
+
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-2 px-5 py-10 md:px-10 md:py-20">
       <h1 className="text-2xl font-semibold">Sentry Test</h1>
@@ -81,10 +92,26 @@ export default function TriggerError() {
         clicking the button below.
       </p>
 
-      {/* Form that calls the action function which throws an error */}
-      <Form method="post" className="mt-5">
-        <Button>Trigger Error</Button>
-      </Form>
+      <div className="mt-5 flex flex-col gap-4">
+        {/* Form that calls the action function which throws an error */}
+        <Form method="post" className="flex justify-center">
+          <Button>Trigger Server Error (Action)</Button>
+        </Form>
+
+        {/* 클라이언트 사이드 에러 테스트 */}
+        <div className="flex justify-center">
+          <Button onClick={handleClientError} variant="outline">
+            Trigger Client Error
+          </Button>
+        </div>
+
+        {/* Sentry 직접 캐치 테스트 */}
+        <div className="flex justify-center">
+          <Button onClick={handleSentryError} variant="secondary">
+            Trigger Sentry Capture
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

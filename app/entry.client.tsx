@@ -39,13 +39,17 @@ import ko from "./locales/ko";
  */
 async function hydrate() {
   // Initialize Sentry for error monitoring in production environments only
-  if (import.meta.env.VITE_SENTRY_DSN && !import.meta.env.DEV) {
+  if (import.meta.env.VITE_SENTRY_DSN) {
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
       // Capture all replays for errors
       replaysOnErrorSampleRate: 1.0,
       // Sample 10% of normal sessions for performance monitoring
       replaysSessionSampleRate: 0.1,
+      // 개발 환경에서는 더 자세한 로깅
+      debug: import.meta.env.DEV,
+      // 개발 환경에서도 에러 캐치
+      environment: import.meta.env.DEV ? "development" : "production",
       integrations: [
         // Configure session replay with privacy protections
         Sentry.replayIntegration({
