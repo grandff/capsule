@@ -132,9 +132,7 @@ export default function DashboardSidebar({
         <Link to="/dashboard">
           <img
             src={
-              theme === Theme.DARK ||
-              (theme === null &&
-                window.matchMedia("(prefers-color-scheme: dark)").matches)
+              theme === Theme.DARK
                 ? "/logos/logo_dark.png"
                 : "/logos/logo_light.png"
             }
