@@ -23,8 +23,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     `client_id=${THREADS_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
     `scope=threads_basic,threads_content_publish,threads_manage_insights,threads_read_replies,threads_keyword_search&` +
-    `response_type=code&` +
-    `state=${state}`;
+    `response_type=code&`;
+  //+`state=${state}`;
   return redirect(authUrl);
 }
 
