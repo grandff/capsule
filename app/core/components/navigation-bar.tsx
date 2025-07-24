@@ -16,7 +16,7 @@
  * - Authenticated state with user profile information
  * - Unauthenticated state with sign in/sign up buttons
  */
-import { CogIcon, HomeIcon, LogOutIcon, MenuIcon } from "lucide-react";
+import { HomeIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Theme, useTheme } from "remix-themes";
@@ -227,9 +227,7 @@ export function NavigationBar({
         <Link to="/">
           <img
             src={
-              theme === Theme.DARK ||
-              (theme === null &&
-                window.matchMedia("(prefers-color-scheme: dark)").matches)
+              theme === Theme.DARK
                 ? "/logos/logo_dark.png"
                 : "/logos/logo_light.png"
             }
