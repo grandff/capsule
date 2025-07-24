@@ -12,13 +12,19 @@ const THREADS_CLIENT_SECRET =
 const REDIRECT_URI = process.env.THREADS_REDIRECT_URI || "redirect_uri";
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const fromOnboarding = url.searchParams.get("from") === "onboarding";
+
+  // 온보딩에서 온 경우 state를 "onboarding"으로 설정
+  const state = fromOnboarding ? "onboarding" : generateRandomState();
+
   const authUrl =
     `https://threads.net/oauth/authorize?` +
     `client_id=${THREADS_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
     `scope=threads_basic,threads_content_publish,threads_manage_insights,threads_read_replies,threads_keyword_search&` +
     `response_type=code&` +
-    `state=${generateRandomState()}`;
+    `state=${state}`;
   return redirect(authUrl);
 }
 

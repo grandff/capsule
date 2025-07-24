@@ -4,7 +4,7 @@ import type { Route } from "./+types/trend-list";
 
 import { useEffect } from "react";
 import { useFetcher } from "react-router";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "sonner";
 
 import makeServerClient from "~/core/lib/supa-client.server";
 
@@ -147,9 +147,6 @@ export default function TrendList({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* Toast Container */}
-      <ToastContainer />
-
       {/* 상단 헤더 */}
       <div className="flex items-center justify-between">
         <div>

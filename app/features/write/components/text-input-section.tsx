@@ -103,7 +103,7 @@ export function TextInputSection({
             {isCheckingToken ? (
               <div className="flex items-center gap-2">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                토큰 확인 중...
+                선택지 불러오는 중...
               </div>
             ) : (
               moodButtonText

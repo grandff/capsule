@@ -23,6 +23,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const isLocalDev =
     process.env.NODE_ENV === "development" && !process.env.VERCEL;
   if (!isLocalDev && !validatePerplexityCronSecret(request)) {
+    console.log("Forbidden create gpt analyze");
     return new Response("Forbidden", { status: 403 });
   }
 

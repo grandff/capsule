@@ -49,6 +49,7 @@ export default [
         "/providers/:provider",
         "features/users/api/disconnect-provider.tsx",
       ),
+      route("/update-first-login", "features/users/api/update-first-login.tsx"),
     ]),
     ...prefix("/write", [
       route("/send-to-thread", "features/write/api/send-to-thread.tsx"),

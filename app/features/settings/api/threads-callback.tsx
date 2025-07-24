@@ -18,17 +18,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // url 끝에 #_ 제거
   const urlWithoutHash = new URL(url.toString().replace("#_", ""));
   const code = urlWithoutHash.searchParams.get("code");
+  const state = urlWithoutHash.searchParams.get("state");
   const error = urlWithoutHash.searchParams.get("error");
   const errorReason = urlWithoutHash.searchParams.get("error_reason");
   const errorDescription = urlWithoutHash.searchParams.get("error_description");
+
+  // state 파라미터를 통해 온보딩에서 온 것인지 확인
+  const isFromOnboarding = state === "onboarding";
 
   if (error) {
     console.log("error", error);
     console.log("errorReason", errorReason);
     console.log("errorDescription", errorDescription);
-    return redirect(
-      `/dashboard/sns/connect?platform=threads&status=error&error=${error}&errorReason=${errorReason}&errorDescription=${errorDescription}`,
-    );
+
+    // 온보딩에서 온 경우 대시보드로, 일반적인 경우 sns-connect로 리다이렉트
+    const redirectUrl = isFromOnboarding
+      ? `/dashboard?platform=threads&status=error&error=${error}&errorReason=${errorReason}&errorDescription=${errorDescription}`
+      : `/dashboard/sns/connect?platform=threads&status=error&error=${error}&errorReason=${errorReason}&errorDescription=${errorDescription}`;
+
+    return redirect(redirectUrl);
   }
 
   // 인증코드 발급 (post)
@@ -51,9 +59,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!response.ok) {
     console.error("Threads API Error:", data);
-    return redirect(
-      `/dashboard/sns/connect?platform=threads&status=error&error=${data.code}&errorReason=${data.error_message}`,
-    );
+
+    // 온보딩에서 온 경우 대시보드로, 일반적인 경우 sns-connect로 리다이렉트
+    const redirectUrl = isFromOnboarding
+      ? `/dashboard?platform=threads&status=error&error=${data.code}&errorReason=${data.error_message}`
+      : `/dashboard/sns/connect?platform=threads&status=error&error=${data.code}&errorReason=${data.error_message}`;
+
+    return redirect(redirectUrl);
   }
 
   // 장기 실행 토큰 가져오기
@@ -77,14 +89,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
         snsId: profileId.id,
       });
       console.log("Access token saved to database");
-      return redirect("/dashboard/sns/connect?platform=threads&status=success");
+
+      // 온보딩에서 온 경우 대시보드로, 일반적인 경우 sns-connect로 리다이렉트
+      const redirectUrl = isFromOnboarding
+        ? "/dashboard?platform=threads&status=success"
+        : "/dashboard/sns/connect?platform=threads&status=success";
+
+      return redirect(redirectUrl);
     } catch (error) {
       console.error("Error saving access token:", error);
-      return redirect("/dashboard/sns/connect?platform=threads&status=error");
+
+      // 온보딩에서 온 경우 대시보드로, 일반적인 경우 sns-connect로 리다이렉트
+      const redirectUrl = isFromOnboarding
+        ? "/dashboard?platform=threads&status=error"
+        : "/dashboard/sns/connect?platform=threads&status=error";
+
+      return redirect(redirectUrl);
     }
   } else {
     console.error("Long-lived token not found");
-    return redirect("/dashboard/sns/connect?platform=threads&status=error");
+
+    // 온보딩에서 온 경우 대시보드로, 일반적인 경우 sns-connect로 리다이렉트
+    const redirectUrl = isFromOnboarding
+      ? "/dashboard?platform=threads&status=error"
+      : "/dashboard/sns/connect?platform=threads&status=error";
+
+    return redirect(redirectUrl);
   }
 }
 

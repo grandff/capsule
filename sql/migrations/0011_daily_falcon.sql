@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "is_first_login" boolean DEFAULT true NOT NULL;

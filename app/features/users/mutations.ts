@@ -159,3 +159,21 @@ export async function deleteUserAccount(
     throw error;
   }
 }
+
+// 최초 접속 여부 업데이트
+export async function updateIsFirstLogin(
+  client: SupabaseClient<Database>,
+  profileId: string,
+  isFirstLogin: boolean,
+) {
+  console.log(isFirstLogin);
+  const { error } = await client
+    .from("profiles")
+    .update({ is_first_login: isFirstLogin })
+    .eq("profile_id", profileId);
+
+  if (error) {
+    console.error("Error updating is_first_login:", error);
+    throw error;
+  }
+}

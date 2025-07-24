@@ -7,7 +7,7 @@ import {
   useFetcher,
   useLoaderData,
 } from "react-router";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "sonner";
 
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getConnectionStatus } from "~/features/settings/queries";
@@ -182,9 +182,6 @@ export default function SnsConnect() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* Alert 메시지 */}
-      {/* TODO 에러 메시지를 받았을 때 처리가 필요함 */}
-      <ToastContainer />
       {/* 상단 헤더 */}
       <div>
         <h1 className="text-3xl font-bold">SNS 연결</h1>

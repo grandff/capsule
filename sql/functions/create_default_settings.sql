@@ -23,7 +23,7 @@ SECURITY DEFINER
 SET SEARCH_PATH = ''
 AS $$
 BEGIN
-    -- Insert default settings for the new profile
+    -- Insert default settings for the new profile (ignore if already exists)
     INSERT INTO public.setting (
         profile_id,
         theme,
@@ -38,7 +38,8 @@ BEGIN
         false,
         NOW(),
         NOW()
-    );
+    )
+    ON CONFLICT (profile_id) DO NOTHING;
     
     RETURN NEW; -- Return the profile record that triggered this function
 END;
@@ -53,7 +54,7 @@ $$;
  * The trigger runs once for each row inserted (FOR EACH ROW)
  * and only activates on INSERT operations, not on UPDATE or DELETE.
  */
-CREATE TRIGGER create_default_settings
+CREATE OR REPLACE TRIGGER create_default_settings
 AFTER INSERT ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION create_default_settings(); 

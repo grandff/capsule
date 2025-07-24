@@ -15,6 +15,12 @@ interface TrendAnalysisData {
   prompt: string;
 }
 
+// Perplexity API 응답에서 인용 문구 제거 함수
+function cleanPerplexityContent(content: string): string {
+  // [1], [2], [3] 등의 인용 문구 제거
+  return content.replace(/\[\d+\]/g, "");
+}
+
 // 특정 사용자의 관심 키워드 조회 함수
 async function getUserKeywords(
   client: any,
@@ -64,7 +70,7 @@ function generatePrompt(keywordList: string[], dateRange: string): string {
 }
 
 // 메인 트렌드 분석 데이터 준비 함수
-async function prepareTrendAnalysisData(
+export async function prepareTrendAnalysisData(
   client: any,
   profileId: string,
 ): Promise<TrendAnalysisData | null> {
@@ -134,11 +140,18 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
           content,
         );
 
-        // 3-4. 트렌드 데이터 저장 (admin 권한 필요)
+        // 3-4. 인용 문구 제거
+        const cleanedContent = cleanPerplexityContent(content);
+        console.log(
+          `사용자 ${user.profile_id} 인용 문구 제거 후 content:`,
+          cleanedContent,
+        );
+
+        // 3-5. 트렌드 데이터 저장 (admin 권한 필요)
         const saveResult = await saveTrendData(
           adminClient,
           user.profile_id,
-          content,
+          cleanedContent,
         );
 
         if (saveResult.success) {

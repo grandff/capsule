@@ -166,3 +166,19 @@ export async function getFollowersCount(
   }
   return data;
 }
+
+// 최초 접속 여부 확인
+export async function getIsFirstLogin(
+  client: SupabaseClient<Database>,
+  profileId: string,
+) {
+  const { data, error } = await client
+    .from("profiles")
+    .select("is_first_login")
+    .eq("profile_id", profileId)
+    .single();
+  if (error) {
+    throw error;
+  }
+  return data;
+}

@@ -53,6 +53,7 @@ export const profiles = pgTable(
     name: text().notNull(),
     marketing_consent: boolean().notNull().default(false),
     avatar_url: text(),
+    is_first_login: boolean().notNull().default(true),
     // Adds created_at and updated_at timestamp columns
     ...timestamps,
   },

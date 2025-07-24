@@ -19,7 +19,7 @@
 import { CogIcon, HomeIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { useTheme } from "remix-themes";
+import { Theme, useTheme } from "remix-themes";
 
 import LangSwitcher from "./lang-switcher";
 import ThemeSwitcher from "./theme-switcher";
@@ -213,6 +213,9 @@ export function NavigationBar({
   const { t } = useTranslation();
   const [theme] = useTheme();
 
+  // 테마 로깅
+  console.log("NavigationBar theme:", theme);
+
   return (
     <nav
       className={
@@ -224,7 +227,9 @@ export function NavigationBar({
         <Link to="/">
           <img
             src={
-              theme === "dark"
+              theme === Theme.DARK ||
+              (theme === null &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches)
                 ? "/logos/logo_dark.png"
                 : "/logos/logo_light.png"
             }

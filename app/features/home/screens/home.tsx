@@ -552,7 +552,7 @@ export default function Home() {
             : "translate-y-10 opacity-0"
         }`}
       >
-        <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
+        {/* <div className=" flex flex-col items-center justify-center gap-6 sm:flex-row">
           <a
             href="https://play.google.com/store/apps/details?id=com.capsule.app"
             target="_blank"
@@ -578,7 +578,7 @@ export default function Home() {
               className="h-12 w-auto"
             />
           </a>
-        </div>
+        </div> */}
       </div>
     </div>
   );
