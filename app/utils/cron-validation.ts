@@ -3,15 +3,15 @@
  * cronjob에서만 호출 가능하도록 헤더의 secret 값을 검증합니다.
  */
 
-const secretKey = process.env.CRON_SECRET ?? "default-cron-secret";
+const secretKey = process.env.CRON_SECRET_KEY ?? "default-cron-secret-key";
 
 export function validateCronSecret(
   request: Request,
   secretKey: string,
 ): boolean {
-  const cronSecret = request.headers.get("X-Cron-Secret");
+  const cronSecret = request.headers.get(secretKey);
   console.log("cronSecret", cronSecret);
-  const expectedSecret = process.env[secretKey] || "default-cron-secret";
+  const expectedSecret = process.env.CRON_SECRET || "default-cron-secret";
   console.log("expectedSecret", expectedSecret);
   console.log(cronSecret === expectedSecret);
   return cronSecret === expectedSecret;

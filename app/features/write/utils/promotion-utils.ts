@@ -1,3 +1,5 @@
+import { getFeedbackPrompt, getFeedbackSystemPrompt } from "../api/prompts";
+
 export interface PromotionData {
   text: string;
   selectedMoods: string[];
@@ -87,4 +89,52 @@ export function simulateProgress(
 
   // cleanup 함수 반환
   return () => clearInterval(interval);
+}
+
+export interface FeedbackData {
+  text: string;
+  needs: string;
+  etc?: string;
+}
+
+export interface FeedbackResult {
+  originalText: string;
+  feedbackText: string;
+  needs: string;
+  etc?: string;
+}
+
+export async function createFeedback(
+  data: FeedbackData,
+): Promise<FeedbackResult> {
+  // 1. 프롬프트 가져오기
+  const systemPrompt = getFeedbackSystemPrompt();
+  const userPrompt = getFeedbackPrompt();
+
+  // 2. 생성 요청
+  const formData = new FormData();
+  formData.append("systemPrompt", systemPrompt);
+  formData.append("prompt", userPrompt);
+  formData.append("text", data.text);
+  formData.append("needs", data.needs);
+  formData.append("etc", data.etc || "");
+
+  const response = await fetch("/api/chatgpt/feedback-gpt-idea", {
+    method: "POST",
+    body: formData,
+  });
+
+  const { completion } = await response.json();
+
+  if (!completion) {
+    throw new Error("피드백 응답을 받지 못했습니다.");
+  }
+
+  // 결과 데이터 준비
+  return {
+    originalText: data.text,
+    feedbackText: completion,
+    needs: data.needs,
+    etc: data.etc,
+  };
 }

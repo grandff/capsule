@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "~/core/components/ui/alert";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import { ActionButtons } from "../components/action-buttons";
+import { FeedbackResultDialog } from "../components/feedback-result-dialog";
 import { GeneratedContentCard } from "../components/generated-content-card";
 import { MediaUploadSection } from "../components/media-upload-section";
 import { DeleteConfirmAlert } from "../components/notifications";
@@ -20,6 +21,7 @@ import {
   deleteFileFromStorage,
   extractFilePathFromUrl,
 } from "../utils/file-upload-utils";
+import { createFeedback } from "../utils/promotion-utils";
 import {
   handleCopy,
   handleFileUpload,
@@ -68,12 +70,6 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 }
 
-interface LoaderData {
-  result?: z.infer<typeof promotionResultSchema>;
-  userId?: string | null;
-  error?: string;
-}
-
 export default function WriteResult({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
@@ -86,6 +82,15 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+
+  // 피드백 관련 상태
+  const [isRequestingFeedback, setIsRequestingFeedback] = useState(false);
+  const [showFeedbackResult, setShowFeedbackResult] = useState(false);
+  const [feedbackResult, setFeedbackResult] = useState<{
+    originalText: string;
+    feedbackText: string;
+  } | null>(null);
+  const [hasFeedbackProcessed, setHasFeedbackProcessed] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -233,6 +238,49 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
     }, 3000);
   };
 
+  // 피드백 요청 핸들러
+  const handleFeedbackRequest = async (needs: string, etc?: string) => {
+    if (!loaderData.result || hasFeedbackProcessed) return;
+
+    setIsRequestingFeedback(true);
+
+    try {
+      const result = await createFeedback({
+        text: displayContent,
+        needs,
+        etc: etc || "",
+      });
+
+      setFeedbackResult({
+        originalText: result.originalText,
+        feedbackText: result.feedbackText,
+      });
+      setShowFeedbackResult(true);
+    } catch (error) {
+      console.error("피드백 요청 중 오류:", error);
+      toast.error("피드백 요청 중 오류가 발생했습니다.");
+    } finally {
+      setIsRequestingFeedback(false);
+    }
+  };
+
+  // 피드백 결과 처리 - 그대로 유지
+  const handleKeepOriginal = () => {
+    setHasFeedbackProcessed(true);
+    setShowFeedbackResult(false);
+    toast.info("원본 글을 유지합니다.");
+  };
+
+  // 피드백 결과 처리 - 반영하기
+  const handleApplyFeedback = () => {
+    if (feedbackResult) {
+      setEditedContent(feedbackResult.feedbackText);
+      setHasFeedbackProcessed(true);
+      setShowFeedbackResult(false);
+      toast.success("피드백이 반영되었습니다.");
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* 성공 알림 */}
@@ -244,6 +292,18 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
         onConfirm={handleFileRemove}
         onCancel={() => setShowDeleteAlert(false)}
       />
+
+      {/* 피드백 결과 다이얼로그 */}
+      {feedbackResult && (
+        <FeedbackResultDialog
+          open={showFeedbackResult}
+          onOpenChange={setShowFeedbackResult}
+          originalText={feedbackResult.originalText}
+          feedbackText={feedbackResult.feedbackText}
+          onKeepOriginal={handleKeepOriginal}
+          onApplyFeedback={handleApplyFeedback}
+        />
+      )}
 
       {/* 메인 컨텐츠 영역 */}
       <div className="flex flex-1 items-center justify-center p-6">
@@ -275,11 +335,14 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
             isEditing={isEditing}
             editedContent={editedContent}
             isCopied={isCopied}
+            isRequestingFeedback={isRequestingFeedback}
+            hasFeedbackProcessed={hasFeedbackProcessed}
             onToggleEdit={handleToggleEdit}
             onSaveEdit={handleSaveEdit}
             onCancelEdit={handleCancelEdit}
             onCopy={handleCopyClick}
             onEditedContentChange={setEditedContent}
+            onFeedbackRequest={handleFeedbackRequest}
           />
 
           {/* 파일 업로드 섹션 */}

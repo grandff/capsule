@@ -5,40 +5,25 @@ import { z } from "zod";
 
 import { gptCompletion } from "~/utils/gpt-util";
 
-const IdeaSchema = z.object({
-  prompt: z.string(),
+const FeedbackSchema = z.object({
+  systemPrompt: z.string({
+    description: "시스템 프롬프트",
+  }),
+  prompt: z.string({
+    description: "사용자 프롬프트",
+  }),
   text: z.string({
-    description:
-      "오늘 있었던 일, 느낀 점, 또는 전하고 싶은 메시지. 최대 100글자 이내로 입력함.",
+    description: "피드백을 요청할 원본 텍스트",
   }),
-  mood: z.string({
-    description: "사용자가 원하는 분위기를 선택함.",
+  needs: z.string({
+    description: "수정 요구사항",
   }),
-  keyword: z.string({
-    description: "사용자가 원하는 키워드를 입력함.",
-  }),
-  intent: z.string({
-    description: "사용자가 원하는 글의 목적을 선택함.",
-  }),
-  length: z
+  etc: z
     .string({
-      description: "사용자가 원하는 글의 길이를 선택함.",
-    })
-    .optional(),
-  timeframe: z
-    .string({
-      description: "사용자가 원하는 시점/상황을 선택함.",
-    })
-    .optional(),
-  weather: z
-    .string({
-      description: "사용자가 원하는 날씨를 선택함.",
+      description: "기타 요구사항",
     })
     .optional(),
 });
-// const ResponseSchema = z.object({
-//   ideas: z.array(IdeaSchema).max(500),
-// });
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
@@ -47,7 +32,7 @@ export async function action({ request }: ActionFunctionArgs) {
     success,
     error,
     data: parsedData,
-  } = IdeaSchema.safeParse(Object.fromEntries(formData));
+  } = FeedbackSchema.safeParse(Object.fromEntries(formData));
 
   console.log(parsedData);
 
@@ -55,13 +40,13 @@ export async function action({ request }: ActionFunctionArgs) {
     return data({ error: error.message }, { status: 400 });
   }
 
-  const { prompt } = parsedData;
+  const { systemPrompt, prompt } = parsedData;
 
   const fullPrompt = replaceFullPrompt(prompt, parsedData);
 
-  const completion = await gptCompletion(fullPrompt);
+  const completion = await gptCompletion(fullPrompt, systemPrompt);
   if (!completion) {
-    return data({ error: "Failed to generate ideas" }, { status: 500 });
+    return data({ error: "Failed to generate feedback" }, { status: 500 });
   }
 
   return data({ completion }, { status: 200 });

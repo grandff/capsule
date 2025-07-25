@@ -75,6 +75,7 @@ export default [
     ]),
     ...prefix("/chatgpt", [
       route("/create-gpt-idea", "features/chatgpt/api/create-gpt-idea.tsx"),
+      route("/feedback-gpt-idea", "features/chatgpt/api/feedback-gpt-idea.tsx"),
     ]),
     ...prefix("/trend", [
       route(
