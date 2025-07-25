@@ -66,7 +66,6 @@ export async function action({ request }: ActionFunctionArgs) {
   console.log("단일 비디오 URL:", videoUrl);
   console.log("다중 이미지 URLs:", imageUrls);
   console.log("다중 비디오 URLs:", videoUrls);
-  console.log("미디어 파일 정보:", parsedMediaFiles);
 
   // 로그인한 사용자 정보 가져오기
   const [client] = makeServerClient(request);
@@ -99,16 +98,6 @@ export async function action({ request }: ActionFunctionArgs) {
   const hasMultipleImages = imageCount > 1;
   const hasMultipleVideos = videoCount > 1;
   const hasMixedMedia = hasImages && hasVideos;
-
-  console.log("=== 미디어 분석 결과 ===");
-  console.log("이미지 개수:", imageCount);
-  console.log("동영상 개수:", videoCount);
-  console.log("총 미디어 개수:", totalMediaCount);
-  console.log("이미지 있음:", hasImages);
-  console.log("동영상 있음:", hasVideos);
-  console.log("다중 이미지:", hasMultipleImages);
-  console.log("다중 동영상:", hasMultipleVideos);
-  console.log("혼합 미디어:", hasMixedMedia);
 
   // 키워드와 속성 데이터 파싱
   const keywordsArray = keywords ? keywords.split(",") : [];

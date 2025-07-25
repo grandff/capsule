@@ -118,7 +118,7 @@ export const FOLLOWERS_EVENT_TYPES = [
   { value: "daily_snapshot", label: "일일 스냅샷" },
 ];
 
-export const MAX_FILES = 10;
+export const MAX_FILES = 5;
 export const MAX_FILE_SIZE = 500; // 500MB (동영상 최대 크기)
 
 export const MAX_IMAGE_SIZE = 6 * 1024 * 1024; // 6MB

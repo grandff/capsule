@@ -55,9 +55,7 @@ export async function uploadFileToStorage(
 ): Promise<string> {
   try {
     console.log("=== 파일 업로드 시작 ===");
-    console.log("파일명:", file.name);
-    console.log("파일 크기:", file.size, "bytes");
-    console.log("파일 타입:", file.type);
+
     console.log("사용자 ID:", userId);
 
     // 올바른 버킷 구조: {user.id}/{year}/{month}/{day}/{fileName}

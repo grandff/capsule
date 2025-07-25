@@ -34,7 +34,6 @@ export const threadsSingleMedia = async (
 
   formData.append("access_token", accessToken);
 
-  console.log(`단일 ${mediaType} 컨테이너 생성:`, mediaUrl);
   console.log("Carousel 아이템:", isCarouselItem);
 
   const response = await fetch(`${THREAD_END_POINT_URL}/${userId}/threads`, {
@@ -106,7 +105,7 @@ export const threads = async (
 
   console.log("userId", userId);
   console.log("accessToken", accessToken);
-  console.log("mediaType", mediaType);
+
   console.log("imageUrl", imageUrl);
   console.log("videoUrl", videoUrl);
 

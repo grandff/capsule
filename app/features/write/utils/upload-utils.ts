@@ -38,9 +38,6 @@ export async function handleFileUpload(
   setIsFileUploading: (uploading: boolean) => void,
   userId: string, // userId 매개변수 추가
 ): Promise<void> {
-  console.log("=== handleFileUpload 시작 ===");
-  console.log("선택된 파일 개수:", files.length);
-  console.log("현재 업로드된 파일 개수:", uploadedFiles.length);
   console.log("사용자 ID:", userId);
 
   if (!files) {
@@ -115,7 +112,6 @@ export async function handleFileUpload(
     };
 
     newFiles.push(newFile);
-    console.log(`파일 추가됨: ${file.name} (ID: ${fileId})`);
   });
 
   if (newFiles.length === 0) {
@@ -125,7 +121,6 @@ export async function handleFileUpload(
 
   // 파일들을 상태에 추가
   setUploadedFiles([...uploadedFiles, ...newFiles]);
-  console.log(`총 ${newFiles.length}개 파일을 상태에 추가했습니다.`);
 
   // 파일 업로드 시작
   setIsFileUploading(true);
@@ -134,7 +129,6 @@ export async function handleFileUpload(
   // 각 파일을 Supabase Storage에 직접 업로드
   for (const file of newFiles) {
     try {
-      console.log(`파일 업로드 중: ${file.name}`);
       const uploadedUrl = await uploadFileToStorage(file.file, userId);
 
       // 업로드 완료된 파일 업데이트
@@ -144,7 +138,6 @@ export async function handleFileUpload(
         ),
       );
 
-      console.log(`파일 업로드 완료: ${file.name} -> ${uploadedUrl}`);
       toast.success(`${file.name} 업로드 완료!`);
     } catch (error) {
       console.error(`파일 업로드 실패: ${file.name}`, error);
@@ -177,18 +170,12 @@ export async function handleThreadsUpload(
   const hasMultipleFiles = uploadedFilesCount > 1;
 
   console.log(`=== 파일 업로드 정보 ===`);
-  console.log(`총 파일 개수: ${uploadedFiles.length}`);
-  console.log(`업로드 완료된 파일 개수: ${uploadedFilesCount}`);
-  console.log(`다중 파일 여부: ${hasMultipleFiles}`);
 
   // 업로드된 파일들의 URL 로깅
   const uploadedFilesWithUrls = uploadedFiles.filter(
     (f) => f.isUploaded && f.uploadedUrl,
   );
-  uploadedFilesWithUrls.forEach((file, index) => {
-    console.log(`파일 ${index + 1}: ${file.name} (${file.type})`);
-    console.log(`Public URL: ${file.uploadedUrl}`);
-  });
+  uploadedFilesWithUrls.forEach((file, index) => {});
 
   const formData = new FormData();
   formData.append("shortText", result.originalText);

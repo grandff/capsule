@@ -21,7 +21,6 @@ export const processMultipleMedia = async (
   mediaType: "image" | "video",
 ): Promise<MediaProcessingResult> => {
   const mediaUrlArray = mediaUrls.split(",");
-  console.log(`다중 ${mediaType} 처리: ${mediaUrlArray.length}개`);
 
   // 각 미디어별로 개별 컨테이너 생성
   const containerIds: string[] = [];
@@ -105,15 +104,11 @@ export const processMixedMedia = async (
     ...allVideoUrls.map((url) => ({ url, type: "video" as const })),
   ];
 
-  console.log(`총 ${allMedia.length}개의 혼합 미디어 처리`);
-
   // 각 미디어별로 개별 컨테이너 생성
   const containerIds: string[] = [];
   for (let i = 0; i < allMedia.length; i++) {
     const { url, type } = allMedia[i];
     const isCarouselItem = i > 0; // 첫 번째가 아닌 경우 carousel item
-
-    console.log(`${type} ${i + 1}/${allMedia.length} 처리:`, url);
 
     const { id: singleContainerId } = await threadsSingleMedia(
       snsId,

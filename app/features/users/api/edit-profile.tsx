@@ -92,8 +92,6 @@ export async function action({ request }: Route.ActionArgs) {
   const profile = await getUserProfile(client, { userId: user.id });
   let avatarUrl = profile?.avatar_url || null;
 
-  console.log(validData.avatar);
-
   // Handle avatar image upload if a valid file was provided
   if (
     validData.avatar &&
@@ -102,7 +100,6 @@ export async function action({ request }: Route.ActionArgs) {
     validData.avatar.size < 1024 * 1024 * 5 && // 5MB size limit
     validData.avatar.type.startsWith("image/") // Ensure it's an image file
   ) {
-    console.log("uploading avatar");
     // Upload avatar to Supabase Storage
     const { error: uploadError } = await client.storage
       .from("avatars")
@@ -112,7 +109,6 @@ export async function action({ request }: Route.ActionArgs) {
 
     // Handle upload errors
     if (uploadError) {
-      console.log(uploadError);
       return data({ error: uploadError.message }, { status: 400 });
     }
 
