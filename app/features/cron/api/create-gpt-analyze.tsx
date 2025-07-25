@@ -22,9 +22,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // 1. 헤더 검증 (cronjob에서만 호출 가능) - 로컬 개발 환경에서는 건너뛰기
   const isLocalDev = process.env.NODE_ENV === "development";
   if (!isLocalDev && !validatePerplexityCronSecret(request)) {
-    console.log("Forbidden create gpt analyze", request.headers);
-    console.log(isLocalDev, process.env.NODE_ENV);
-    console.log(validatePerplexityCronSecret(request));
     return new Response("Forbidden", { status: 403 });
   }
 

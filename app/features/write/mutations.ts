@@ -318,3 +318,21 @@ export async function saveGptAnalysisResult(
   console.log(`GPT 분석 결과 저장 완료: analysis_id ${data.analysis_id}`);
   return data.analysis_id;
 }
+
+// 피드백 저장
+export async function saveFeedback(
+  client: SupabaseClient<Database>,
+  feedbackData: {
+    profile_id: string;
+    original_text: string;
+    feedback_text: string;
+    etc_text: string;
+    is_applied: boolean;
+  },
+) {
+  const { error } = await client.from("thread_feedbacks").insert(feedbackData);
+
+  if (error) {
+    console.error("Error saving feedback:", error);
+  }
+}

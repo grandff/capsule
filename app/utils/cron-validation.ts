@@ -10,10 +10,7 @@ export function validateCronSecret(
   secretKey: string,
 ): boolean {
   const cronSecret = request.headers.get(secretKey);
-  console.log("cronSecret", cronSecret);
   const expectedSecret = process.env.CRON_SECRET || "default-cron-secret";
-  console.log("expectedSecret", expectedSecret);
-  console.log(cronSecret === expectedSecret);
   return cronSecret === expectedSecret;
 }
 
@@ -21,6 +18,5 @@ export function validateCronSecret(
  * Perplexity 트렌드 분석용 cron secret 검증
  */
 export function validatePerplexityCronSecret(request: Request): boolean {
-  console.log("secretKey", secretKey);
   return validateCronSecret(request, secretKey);
 }

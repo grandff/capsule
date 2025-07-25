@@ -448,6 +448,50 @@ export type Database = {
           },
         ]
       }
+      thread_feedbacks: {
+        Row: {
+          created_at: string
+          etc_text: string
+          feedback_id: number
+          feedback_text: string
+          is_applied: boolean
+          original_text: string
+          profile_id: string
+          result_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          etc_text: string
+          feedback_id?: never
+          feedback_text: string
+          is_applied?: boolean
+          original_text: string
+          profile_id: string
+          result_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          etc_text?: string
+          feedback_id?: never
+          feedback_text?: string
+          is_applied?: boolean
+          original_text?: string
+          profile_id?: string
+          result_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_feedbacks_profile_id_profiles_profile_id_fk"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       thread_keywords: {
         Row: {
           created_at: string

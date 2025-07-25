@@ -339,6 +339,56 @@ export const properties = pgTable(
   ],
 );
 
+export const feedbacks = pgTable(
+  "thread_feedbacks",
+  {
+    feedback_id: bigint({ mode: "number" })
+      .primaryKey()
+      .generatedAlwaysAsIdentity(),
+    profile_id: uuid()
+      .notNull()
+      .references(() => profiles.profile_id, { onDelete: "cascade" }),
+    original_text: text().notNull(),
+    feedback_text: text().notNull(),
+    etc_text: text().notNull(),
+    result_text: text(),
+    is_applied: boolean().notNull().default(false),
+    created_at: timestamp().notNull().defaultNow(),
+    updated_at: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    // RLS Policy: Users can only view their own threads
+    pgPolicy("select-threads-policy", {
+      for: "select",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only insert their own threads
+    pgPolicy("insert-threads-policy", {
+      for: "insert",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only update their own threads
+    pgPolicy("update-threads-policy", {
+      for: "update",
+      to: authenticatedRole,
+      as: "permissive",
+      withCheck: sql`${authUid} = ${table.profile_id}`,
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+    // RLS Policy: Users can only delete their own threads
+    pgPolicy("delete-threads-policy", {
+      for: "delete",
+      to: authenticatedRole,
+      as: "permissive",
+      using: sql`${authUid} = ${table.profile_id}`,
+    }),
+  ],
+);
+
 // 프롬프트 관련 스키마
 export const PromptTypeSchema = z.enum([
   "SOCIAL_MEDIA_POST", // 소셜미디어 포스트

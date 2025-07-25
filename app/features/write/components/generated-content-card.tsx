@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "~/core/components/ui/button";
 import {
@@ -59,11 +60,12 @@ export function GeneratedContentCard({
   const [feedbackText, setFeedbackText] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
 
-  const displayContent = isEditing ? editedContent : content;
+  const displayContent = editedContent || content;
 
   const handleFeedbackSubmit = () => {
     if (!onFeedbackRequest || !feedbackText.trim()) return;
 
+    toast.info("피드백을 받고 새롭게 글을 써드릴게요!");
     onFeedbackRequest(feedbackText.trim(), additionalNotes.trim() || undefined);
     setShowFeedbackDialog(false);
     setFeedbackText("");
@@ -196,6 +198,7 @@ export function GeneratedContentCard({
                 placeholder="어떻게 수정했으면 좋을까요? (예: 더 친근하게 작성해줘, 설명이 더 필요해, 기계같은 말투는 쓰지마 등)"
                 className="min-h-[100px] resize-none"
                 disabled={isRequestingFeedback}
+                maxLength={500}
               />
             </div>
             <div className="space-y-2">
@@ -207,6 +210,7 @@ export function GeneratedContentCard({
                 placeholder="참고할 만한 추가 정보나 특별한 요구사항이 있다면 입력해주세요."
                 className="min-h-[80px] resize-none"
                 disabled={isRequestingFeedback}
+                maxLength={500}
               />
             </div>
           </div>

@@ -85,6 +85,13 @@
       "when": 1753329458273,
       "tag": "0011_daily_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1753419248672,
+      "tag": "0012_sad_baron_strucker",
+      "breakpoints": true
     }
   ]
 }

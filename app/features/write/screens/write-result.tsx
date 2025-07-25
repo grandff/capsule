@@ -43,7 +43,6 @@ const promotionResultSchema = z.object({
   weather: z.string().optional(),
 });
 
-// FIXME 오류 나는 경우에는 오류 페이지로 이동시키기
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const resultParam = url.searchParams.get("result");
@@ -89,10 +88,38 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
   const [feedbackResult, setFeedbackResult] = useState<{
     originalText: string;
     feedbackText: string;
+    etcText?: string;
   } | null>(null);
   const [hasFeedbackProcessed, setHasFeedbackProcessed] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  // 컴포넌트 마운트 시 세션스토리지에서 피드백 상태 복원
+  useEffect(() => {
+    const sessionFeedbackProcessed =
+      sessionStorage.getItem("feedbackProcessed") === "true";
+    const sessionFeedbackContent = sessionStorage.getItem("feedbackContent");
+
+    if (sessionFeedbackProcessed) {
+      setHasFeedbackProcessed(true);
+    }
+
+    if (sessionFeedbackContent) {
+      setEditedContent(sessionFeedbackContent);
+    }
+  }, []);
+
+  // 현재 표시할 콘텐츠 (편집 중이면 editedContent, 아니면 원본)
+  const displayContent = editedContent || loaderData.result?.content || "";
+
+  // 컴포넌트 언마운트 시 세션스토리지 정리
+  useEffect(() => {
+    return () => {
+      // 다른 화면으로 이동할 때 세션스토리지 정리
+      sessionStorage.removeItem("feedbackProcessed");
+      sessionStorage.removeItem("feedbackContent");
+    };
+  }, []);
 
   // result와 userId 상태 초기화
 
@@ -210,11 +237,6 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
     }
   };
 
-  // 현재 표시할 콘텐츠 (편집 중이면 editedContent, 아니면 원본)
-  const displayContent = isEditing
-    ? editedContent
-    : loaderData.result?.content || "";
-
   // 업로드하기 핸들러
   const handleUpload = async (platform: string) => {
     if (!loaderData.result) return;
@@ -242,7 +264,12 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
   const handleFeedbackRequest = async (needs: string, etc?: string) => {
     if (!loaderData.result || hasFeedbackProcessed) return;
 
+    // 피드백 요청 시작과 동시에 이미 처리된 것으로 표시
+    setHasFeedbackProcessed(true);
+    sessionStorage.setItem("feedbackProcessed", "true");
+
     setIsRequestingFeedback(true);
+    toast.info("피드백을 받고 새롭게 생성 중입니다...");
 
     try {
       const result = await createFeedback({
@@ -254,28 +281,74 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
       setFeedbackResult({
         originalText: result.originalText,
         feedbackText: result.feedbackText,
+        etcText: etc || "",
       });
       setShowFeedbackResult(true);
     } catch (error) {
       console.error("피드백 요청 중 오류:", error);
       toast.error("피드백 요청 중 오류가 발생했습니다.");
+      // 오류 발생 시 피드백 처리 상태를 되돌림
+      setHasFeedbackProcessed(false);
+      sessionStorage.removeItem("feedbackProcessed");
     } finally {
       setIsRequestingFeedback(false);
     }
   };
 
   // 피드백 결과 처리 - 그대로 유지
-  const handleKeepOriginal = () => {
+  const handleKeepOriginal = async () => {
     setHasFeedbackProcessed(true);
+    sessionStorage.setItem("feedbackProcessed", "true");
+
+    // DB에 피드백 저장
+    if (feedbackResult) {
+      try {
+        const formData = new FormData();
+        formData.append("originalText", feedbackResult.originalText);
+        formData.append("feedbackText", feedbackResult.feedbackText);
+        formData.append("etcText", feedbackResult.etcText || "");
+        formData.append("isApplied", "false");
+        formData.append("profileId", loaderData.userId!);
+
+        await fetch("/api/write/save-feedback", {
+          method: "POST",
+          body: formData,
+        });
+      } catch (error) {
+        console.error("피드백 저장 중 오류:", error);
+      }
+    }
+
     setShowFeedbackResult(false);
     toast.info("원본 글을 유지합니다.");
   };
 
   // 피드백 결과 처리 - 반영하기
-  const handleApplyFeedback = () => {
+  const handleApplyFeedback = async () => {
     if (feedbackResult) {
       setEditedContent(feedbackResult.feedbackText);
       setHasFeedbackProcessed(true);
+
+      sessionStorage.setItem("feedbackProcessed", "true");
+      sessionStorage.setItem("feedbackContent", feedbackResult.feedbackText);
+
+      // DB에 피드백 저장 (반영함)
+      try {
+        const formData = new FormData();
+        formData.append("originalText", feedbackResult.originalText);
+        formData.append("feedbackText", feedbackResult.feedbackText);
+        formData.append("etcText", feedbackResult.etcText || "");
+        formData.append("isApplied", "true");
+        formData.append("profileId", loaderData.userId!);
+
+        await fetch("/api/write/save-feedback", {
+          method: "POST",
+          body: formData,
+        });
+      } catch (error) {
+        console.error("피드백 저장 중 오류:", error);
+      }
+
       setShowFeedbackResult(false);
       toast.success("피드백이 반영되었습니다.");
     }
@@ -372,11 +445,7 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
         encType="multipart/form-data"
         className="hidden"
       >
-        <input
-          type="hidden"
-          name="text"
-          value={loaderData.result?.content || ""}
-        />
+        <input type="hidden" name="text" value={displayContent} />
         {/* 이미지 파일이 있다면 첫 번째 파일의 url을 전달 */}
         {uploadedFiles.length > 0 && (
           <input
