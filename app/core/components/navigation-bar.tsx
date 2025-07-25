@@ -19,7 +19,6 @@
 import { HomeIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
-import { Theme, useTheme } from "remix-themes";
 
 import LangSwitcher from "./lang-switcher";
 import ThemeSwitcher from "./theme-switcher";
@@ -211,10 +210,6 @@ export function NavigationBar({
 }) {
   // Get translation function for internationalization
   const { t } = useTranslation();
-  const [theme] = useTheme();
-
-  // 테마 로깅
-  console.log("NavigationBar theme:", theme);
 
   return (
     <nav
@@ -226,13 +221,14 @@ export function NavigationBar({
         {/* Application logo/title with link to home */}
         <Link to="/">
           <img
-            src={
-              theme === Theme.DARK
-                ? "/logos/logo_dark.png"
-                : "/logos/logo_light.png"
-            }
+            src="/logos/logo_light.png"
             alt="Capsule"
-            className="h-8 w-auto"
+            className="block h-8 w-auto dark:hidden"
+          />
+          <img
+            src="/logos/logo_dark.png"
+            alt="Capsule"
+            className="hidden h-8 w-auto dark:block"
           />
         </Link>
 

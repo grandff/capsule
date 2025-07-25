@@ -9,7 +9,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router";
-import { Theme, useTheme } from "remix-themes";
 
 import {
   Sidebar,
@@ -121,23 +120,19 @@ export default function DashboardSidebar({
     avatarUrl: string;
   };
 }) {
-  const [theme] = useTheme();
-
-  // 테마 로깅
-  console.log("DashboardSidebar theme:", theme);
-
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
         <Link to="/dashboard">
           <img
-            src={
-              theme === Theme.DARK
-                ? "/logos/logo_dark.png"
-                : "/logos/logo_light.png"
-            }
+            src="/logos/logo_light.png"
             alt="Capsule"
-            className="h-8 w-auto"
+            className="block h-8 w-auto dark:hidden"
+          />
+          <img
+            src="/logos/logo_dark.png"
+            alt="Capsule"
+            className="hidden h-8 w-auto dark:block"
           />
         </Link>
       </SidebarHeader>
