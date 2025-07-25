@@ -314,18 +314,11 @@ export default function WriteResult({ loaderData }: Route.ComponentProps) {
           name="text"
           value={loaderData.result?.content || ""}
         />
-        {/* 이미지/동영상 파일이 있다면 첫 번째 파일의 url을 전달 (실제 업로드 구현에 따라 수정) */}
-        {uploadedFiles.length > 0 && uploadedFiles[0].type === "image" && (
+        {/* 이미지 파일이 있다면 첫 번째 파일의 url을 전달 */}
+        {uploadedFiles.length > 0 && (
           <input
             type="hidden"
             name="imageUrl"
-            value={uploadedFiles[0].preview}
-          />
-        )}
-        {uploadedFiles.length > 0 && uploadedFiles[0].type === "video" && (
-          <input
-            type="hidden"
-            name="videoUrl"
             value={uploadedFiles[0].preview}
           />
         )}

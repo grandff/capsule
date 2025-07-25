@@ -1,31 +1,17 @@
-import { ImageIcon, UploadIcon, VideoIcon, XIcon } from "lucide-react";
+import { ImageIcon, UploadIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  ALLOWED_IMAGE_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  MAX_FILES,
-  MAX_FILE_SIZE,
-} from "~/constants";
+import { ALLOWED_IMAGE_TYPES, MAX_FILES, MAX_FILE_SIZE } from "~/constants";
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
-
-import {
-  compressVideo,
-  isImageFile,
-  isVideoFile,
-  needsCompression,
-} from "../utils/media-compressor";
 
 interface UploadedFile {
   id: string;
   file: File;
   preview: string;
-  type: "image" | "video";
+  type: "image";
   size: number;
-  isCompressed?: boolean;
-  originalSize?: number;
 }
 
 interface FileUploadProps {
@@ -48,48 +34,20 @@ export default function FileUpload({
 
   // 파일 유효성 검사
   const validateFile = (file: File): string | null => {
-    // 파일 크기 검사
     if (file.size > maxFileSize * 1024 * 1024) {
       return `파일 크기는 ${maxFileSize}MB 이하여야 합니다.`;
     }
-
-    // 파일 타입 검사
-    const isValidImage = isImageFile(file);
-    const isValidVideo = isVideoFile(file);
-
-    if (!isValidImage && !isValidVideo) {
-      return "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG, WebP / 동영상: MP4, MOV, AVI)";
+    // 이미지 파일만 허용
+    const isValidImage = file.type.startsWith("image/");
+    if (!isValidImage) {
+      return "이미지 파일만 업로드 가능합니다.";
     }
-
     return null;
   };
 
   // 동영상 압축 처리
   const processVideoCompression = async (file: File): Promise<File> => {
-    if (isVideoFile(file) && needsCompression(file)) {
-      try {
-        setCompressing(file.name);
-        console.log(`동영상 압축 시작: ${file.name}`);
-
-        const compressedFile = await compressVideo(file, {
-          maxWidth: 1920,
-          maxHeight: 1080,
-          bitrate: "1000k",
-          fps: 30,
-          format: "mp4",
-        });
-
-        console.log(`동영상 압축 완료: ${file.name}`);
-        return compressedFile;
-      } catch (error) {
-        console.error("동영상 압축 실패:", error);
-        // 압축 실패 시 원본 파일 반환
-        return file;
-      } finally {
-        setCompressing(null);
-      }
-    }
-
+    // 비디오 압축 로직 제거
     return file;
   };
 
@@ -115,31 +73,21 @@ export default function FileUpload({
       }
 
       try {
-        // 동영상인 경우 압축 처리
-        const processedFile = await processVideoCompression(file);
-
-        const fileType = isImageFile(file) ? "image" : "video";
-        const preview = URL.createObjectURL(processedFile);
+        // 비디오 압축 등 불필요, 바로 미리보기 생성
+        const preview = URL.createObjectURL(file);
 
         const uploadedFile: UploadedFile = {
           id: `${Date.now()}-${Math.random()}`,
-          file: processedFile,
+          file,
           preview,
-          type: fileType,
-          size: processedFile.size,
-          isCompressed: processedFile.size !== file.size,
-          originalSize:
-            processedFile.size !== file.size ? file.size : undefined,
+          type: "image",
+          size: file.size,
         };
 
         validFiles.push(uploadedFile);
 
         // 성공 메시지
-        if (processedFile.size !== file.size) {
-          toast.success(`${file.name} 압축 완료!`);
-        } else {
-          toast.success(`${file.name} 추가 완료!`);
-        }
+        toast.success(`${file.name} 추가 완료!`);
       } catch (error) {
         console.error("파일 처리 오류:", error);
         const errorMsg = "파일 처리 중 오류가 발생했습니다.";
@@ -219,7 +167,7 @@ export default function FileUpload({
           ref={fileInputRef}
           type="file"
           multiple
-          accept={[...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES].join(",")}
+          accept={ALLOWED_IMAGE_TYPES.join(",")}
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -231,11 +179,7 @@ export default function FileUpload({
               파일을 드래그하거나 클릭하여 업로드
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              이미지 (JPG, PNG, WebP) 또는 동영상 (MP4, MOV, AVI) 최대{" "}
-              {maxFileSize}MB
-            </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400">
-              대용량 동영상은 자동으로 압축됩니다
+              이미지 (JPG, PNG, WebP) 최대 {maxFileSize}MB
             </p>
           </div>
           <Button
@@ -285,18 +229,11 @@ export default function FileUpload({
                 key={file.id}
                 className="group relative aspect-square overflow-hidden rounded-lg border bg-gray-100 dark:bg-gray-800"
               >
-                {file.type === "image" ? (
-                  <img
-                    src={file.preview}
-                    alt={file.file.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <VideoIcon className="size-8 text-gray-400" />
-                  </div>
-                )}
-
+                <img
+                  src={file.preview}
+                  alt={file.file.name}
+                  className="h-full w-full object-cover"
+                />
                 {/* 파일 정보 오버레이 */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                   <div className="flex h-full flex-col justify-between p-2 text-white">
@@ -315,34 +252,14 @@ export default function FileUpload({
                       <p className="truncate font-medium">{file.file.name}</p>
                       <p className="text-gray-300">
                         {formatFileSize(file.size)}
-                        {file.isCompressed && file.originalSize && (
-                          <span className="ml-1 text-green-400">
-                            (압축됨: {formatFileSize(file.originalSize)} →{" "}
-                            {formatFileSize(file.size)})
-                          </span>
-                        )}
                       </p>
                     </div>
                   </div>
                 </div>
-
                 {/* 파일 타입 아이콘 */}
                 <div className="absolute bottom-1 left-1">
-                  {file.type === "image" ? (
-                    <ImageIcon className="size-4 text-white drop-shadow" />
-                  ) : (
-                    <VideoIcon className="size-4 text-white drop-shadow" />
-                  )}
+                  <ImageIcon className="size-4 text-white drop-shadow" />
                 </div>
-
-                {/* 압축 표시 */}
-                {file.isCompressed && (
-                  <div className="absolute top-1 right-1">
-                    <Badge variant="secondary" className="text-xs">
-                      압축됨
-                    </Badge>
-                  </div>
-                )}
               </div>
             ))}
           </div>

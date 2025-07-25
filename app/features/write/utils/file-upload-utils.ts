@@ -41,11 +41,11 @@ export interface UploadedFile {
 
 // 파일 제한 설정
 export const FILE_LIMITS = {
-  MAX_FILES: 20,
+  MAX_FILES: 10, // 상수와 일치시킴
   MAX_IMAGE_SIZE: MAX_IMAGE_SIZE,
   MAX_VIDEO_SIZE: MAX_VIDEO_SIZE,
   ALLOWED_IMAGE_TYPES: ALLOWED_IMAGE_TYPES,
-  ALLOWED_VIDEO_TYPES: ALLOWED_VIDEO_TYPES,
+  ALLOWED_VIDEO_TYPES: [], // 이미지만 허용
 } as const;
 
 // 파일을 Supabase Storage에 직접 업로드 (클라이언트에서)
@@ -125,27 +125,21 @@ export function validateFile(
     };
   }
 
-  // 파일 타입 체크
+  // 파일 타입 체크 (이미지만 허용)
   const isImage = FILE_LIMITS.ALLOWED_IMAGE_TYPES.includes(file.type as any);
-  const isVideo = FILE_LIMITS.ALLOWED_VIDEO_TYPES.includes(file.type as any);
-
-  if (!isImage && !isVideo) {
+  if (!isImage) {
     return {
       isValid: false,
-      error:
-        "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG / 동영상: MP4, MOV)",
+      error: "지원하지 않는 파일 형식입니다. (이미지 파일만 업로드 가능)",
     };
   }
 
   // 파일 크기 체크
-  const maxSize = isImage
-    ? FILE_LIMITS.MAX_IMAGE_SIZE
-    : FILE_LIMITS.MAX_VIDEO_SIZE;
+  const maxSize = FILE_LIMITS.MAX_IMAGE_SIZE;
   if (file.size > maxSize) {
-    const maxSizeMB = isImage ? "8MB" : "1GB";
     return {
       isValid: false,
-      error: `${file.name} 파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`,
+      error: `${file.name} 파일이 너무 큽니다. 최대 6MB까지 가능합니다.`,
     };
   }
 
@@ -155,8 +149,8 @@ export function validateFile(
 // 파일 객체 생성
 export function createUploadedFile(file: File): UploadedFile {
   const fileId = Date.now() + Math.random().toString(36).substr(2, 9);
-  const isImage = FILE_LIMITS.ALLOWED_IMAGE_TYPES.includes(file.type as any);
-  const fileType = isImage ? "image" : "video";
+  // 이미지만 허용하므로 fileType은 무조건 'image'
+  const fileType: "image" = "image";
   const preview = URL.createObjectURL(file);
 
   return {

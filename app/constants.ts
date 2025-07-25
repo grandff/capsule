@@ -118,7 +118,7 @@ export const FOLLOWERS_EVENT_TYPES = [
   { value: "daily_snapshot", label: "일일 스냅샷" },
 ];
 
-export const MAX_FILES = 20;
+export const MAX_FILES = 10;
 export const MAX_FILE_SIZE = 500; // 500MB (동영상 최대 크기)
 
 export const MAX_IMAGE_SIZE = 6 * 1024 * 1024; // 6MB
@@ -126,7 +126,8 @@ export const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
 export const MAX_IMAGE_SIZE_MB = "6MB";
 export const MAX_VIDEO_SIZE_MB = "500MB";
 export const ALLOWED_IMAGE_TYPES = ["image/*"];
-export const ALLOWED_VIDEO_TYPES = ["video/*"];
+// 이미지만 허용
+export const ALLOWED_VIDEO_TYPES = [];
 
 export const SHORT_TOAST_DURATION = 1500;
 export const LONG_TOAST_DURATION = 3000;

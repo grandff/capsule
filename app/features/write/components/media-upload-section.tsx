@@ -3,6 +3,7 @@ import type { UploadedFile } from "../utils/file-upload-utils";
 import { CheckCircle2Icon, Image, Upload, Video, X } from "lucide-react";
 import { useRef } from "react";
 
+import { MAX_FILES, MAX_IMAGE_SIZE_MB } from "~/constants";
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
 import { Button } from "~/core/components/ui/button";
 import {
@@ -28,7 +29,6 @@ export function MediaUploadSection({
   onFileRemoveConfirm,
 }: MediaUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const MAX_FILES = 20;
 
   return (
     <Card>
@@ -51,7 +51,8 @@ export function MediaUploadSection({
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".jpg,.jpeg,.png,.mp4,.mov,.quicktime"
+              // accept=".jpg,.jpeg,.png,.mp4,.mov,.quicktime"
+              accept=".jpg,.jpeg,.png"
               onChange={onFileUpload}
               className="hidden"
             />
@@ -71,9 +72,9 @@ export function MediaUploadSection({
 
           {/* 파일 형식 안내 */}
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            <p>• 이미지: JPG, PNG, JPG (최대 6MB)</p>
-            <p>• 동영상: MP4, MOV, QUICKTIME (최대 500MB)</p>
-            <p>• 총 최대 20개까지 업로드 가능</p>
+            <p>• 이미지: JPG, PNG, JPEG (최대 {MAX_IMAGE_SIZE_MB})</p>
+            {/* <p>• 동영상: MP4, MOV, QUICKTIME (최대 500MB)</p> */}
+            <p>• 총 최대 {MAX_FILES}개까지 업로드 가능</p>
           </div>
 
           {/* 업로드된 파일 목록 */}

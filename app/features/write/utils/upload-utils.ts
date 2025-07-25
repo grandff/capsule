@@ -56,9 +56,9 @@ export async function handleFileUpload(
 
   setUploadError("");
 
-  // 파일 개수 체크
-  if (uploadedFiles.length + files.length > 20) {
-    const errorMsg = "최대 20개까지만 업로드 가능합니다.";
+  // 파일 개수 체크 (최대 10개)
+  if (uploadedFiles.length + files.length > 10) {
+    const errorMsg = "최대 10개까지만 업로드 가능합니다.";
     console.error(errorMsg);
     setUploadError(errorMsg);
     return;
@@ -72,33 +72,26 @@ export async function handleFileUpload(
       `파일 처리 중: ${file.name} (${file.type}, ${file.size} bytes)`,
     );
 
-    // 파일 타입 확인 (와일드카드 패턴 처리)
+    // 파일 타입 확인 (이미지 파일만 허용)
     const isImage = ALLOWED_IMAGE_TYPES.some(
       (type) =>
         type === file.type ||
         (type.endsWith("/*") && file.type.startsWith(type.slice(0, -2))),
     );
-    const isVideo = ALLOWED_VIDEO_TYPES.some(
-      (type) =>
-        type === file.type ||
-        (type.endsWith("/*") && file.type.startsWith(type.slice(0, -2))),
-    );
     console.log("isImage", isImage);
-    console.log("isVideo", isVideo);
 
-    if (!isImage && !isVideo) {
+    if (!isImage) {
       const errorMsg =
-        "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG, JPG / 동영상: MP4, MOV, QUICKTIME)";
+        "지원하지 않는 파일 형식입니다. (이미지 파일만 업로드 가능)";
       console.error(errorMsg);
       setUploadError(errorMsg);
       return;
     }
 
-    // 파일 크기 체크
-    const maxSize = isImage ? 6 * 1024 * 1024 : 500 * 1024 * 1024;
+    // 파일 크기 체크 (이미지: 6MB)
+    const maxSize = 6 * 1024 * 1024;
     if (file.size > maxSize) {
-      const maxSizeMB = isImage ? "6MB" : "500MB";
-      const errorMsg = `${file.name} 파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`;
+      const errorMsg = `${file.name} 파일이 너무 큽니다. 최대 6MB까지 가능합니다.`;
       console.error(errorMsg);
       setUploadError(errorMsg);
       return;
@@ -106,7 +99,7 @@ export async function handleFileUpload(
 
     // 파일 추가
     const fileId = Date.now() + Math.random().toString(36).substr(2, 9);
-    const fileType = isImage ? "image" : "video";
+    const fileType = "image";
 
     // 미리보기 URL 생성
     const preview = URL.createObjectURL(file);
@@ -204,7 +197,7 @@ export async function handleThreadsUpload(
   formData.append("moods", result.moods.join(","));
   formData.append("intents", result.intents?.join(",") || "");
 
-  // 미디어 파일 정보 추가
+  // 미디어 파일 정보 추가 (이미지 파일만)
   const mediaFilesWithUrls = uploadedFiles.filter(
     (f) => f.isUploaded && f.uploadedUrl,
   );
@@ -218,46 +211,24 @@ export async function handleThreadsUpload(
       storage_path: extractFilePathFromUrl(file.uploadedUrl!),
       media_type: file.type,
     }));
-
     formData.append("mediaFiles", JSON.stringify(mediaFilesData));
   }
 
-  // 파일 개수에 따른 분기 처리
-  if (uploadedFilesCount === 1) {
-    // 단일 파일 처리
-    const uploadedFile = uploadedFiles.find((f) => f.isUploaded);
+  // 단일 파일 처리 (이미지)
+  if (uploadedFilesWithUrls.length === 1) {
+    const uploadedFile = uploadedFilesWithUrls[0];
     if (uploadedFile && uploadedFile.uploadedUrl) {
-      console.log(
-        `단일 파일 전송: ${uploadedFile.type} - ${uploadedFile.uploadedUrl}`,
-      );
-      if (uploadedFile.type === "image") {
-        formData.append("imageUrl", uploadedFile.uploadedUrl);
-      } else if (uploadedFile.type === "video") {
-        formData.append("videoUrl", uploadedFile.uploadedUrl);
-      }
+      formData.append("imageUrl", uploadedFile.uploadedUrl);
     }
-  } else if (uploadedFilesCount > 1) {
-    // 다중 파일 처리
-    console.log(`다중 파일 전송 시작 (${uploadedFilesCount}개)`);
+  } else if (uploadedFilesWithUrls.length > 1) {
+    // 다중 파일 처리 (이미지)
     const imageUrls: string[] = [];
-    const videoUrls: string[] = [];
-
     mediaFilesWithUrls.forEach((file) => {
-      if (file.type === "image") {
-        imageUrls.push(file.uploadedUrl!);
-      } else if (file.type === "video") {
-        videoUrls.push(file.uploadedUrl!);
-      }
+      imageUrls.push(file.uploadedUrl!);
     });
-
-    // 이미지와 비디오 URL들을 쉼표로 구분하여 전송
     if (imageUrls.length > 0) {
       formData.append("imageUrls", imageUrls.join(","));
       console.log(`이미지 URLs: ${imageUrls.join(", ")}`);
-    }
-    if (videoUrls.length > 0) {
-      formData.append("videoUrls", videoUrls.join(","));
-      console.log(`비디오 URLs: ${videoUrls.join(", ")}`);
     }
   }
 

@@ -175,163 +175,162 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  // DB 저장 완료 후 즉시 성공 응답 반환
-  console.log("=== DB 저장 완료, 즉시 응답 반환 ===");
+  // DB 저장 완료 후 Threads API 호출
+  console.log("=== Threads API 호출 시작 ===");
 
-  // Threads API 호출을 백그라운드에서 비동기로 실행
-  (async () => {
-    try {
-      console.log("=== 백그라운드 Threads API 호출 시작 ===");
+  try {
+    let processingResult: { containerId: string; threadId: string };
 
-      let processingResult: { containerId: string; threadId: string };
-
-      // 6가지 경우의 수에 따른 분기 처리
-      if (totalMediaCount === 0) {
-        // 1. 텍스트만
-        console.log("=== 케이스 1: 텍스트만 ===");
-        processingResult = await processSingleMedia(
-          snsId,
-          text,
-          accessToken,
-          undefined,
-          undefined,
-        );
-      } else if (totalMediaCount === 1) {
-        // 2. 이미지 1개 또는 동영상 1개
-        console.log("=== 케이스 2-3: 단일 미디어 ===");
-        processingResult = await processSingleMedia(
-          snsId,
-          text,
-          accessToken,
-          imageUrl,
-          videoUrl,
-        );
-      } else if (hasMultipleImages && !hasVideos) {
-        // 4. 이미지 2개 이상
-        console.log("=== 케이스 4: 다중 이미지 ===");
-        const allImageUrls = [imageUrl, imageUrls].filter(Boolean).join(",");
-        processingResult = await processMultipleMedia(
-          snsId,
-          text,
-          accessToken,
-          allImageUrls,
-          "image",
-        );
-      } else if (hasMultipleVideos && !hasImages) {
-        // 5. 동영상 2개 이상
-        console.log("=== 케이스 5: 다중 동영상 ===");
-        const allVideoUrls = [videoUrl, videoUrls].filter(Boolean).join(",");
-        processingResult = await processMultipleMedia(
-          snsId,
-          text,
-          accessToken,
-          allVideoUrls,
-          "video",
-        );
-      } else if (hasMixedMedia) {
-        // 6. 이미지 + 동영상 혼합
-        console.log("=== 케이스 6: 혼합 미디어 ===");
-        processingResult = await processMixedMedia(
-          snsId,
-          text,
-          accessToken,
-          imageUrl,
-          videoUrl,
-          imageUrls,
-          videoUrls,
-        );
-      } else {
-        // 예상치 못한 경우 (fallback)
-        console.log("=== 예상치 못한 케이스, 단일 미디어로 처리 ===");
-        processingResult = await processSingleMedia(
-          snsId,
-          text,
-          accessToken,
-          imageUrl,
-          videoUrl,
-        );
-      }
-
-      const { threadId: bgThreadId } = processingResult;
-
-      console.log("Threads API 호출 성공, threadId:", bgThreadId);
-
-      // 성공 시 로컬 DB 업데이트
-      await updateThreadResultId(client, localThreadId, bgThreadId);
-
-      // send_flag도 true로 업데이트
-      const { error: updateError } = await client
-        .from("threads")
-        .update({ send_flag: true })
-        .eq("thread_id", localThreadId);
-
-      if (updateError) {
-        console.error("Error updating send_flag:", updateError);
-      }
-
-      console.log("백그라운드 로컬 DB 업데이트 완료");
-
-      // 사용자 인사이트 저장 (백그라운드에서 실행)
-      try {
-        console.log("=== 백그라운드 사용자 인사이트 저장 시작 ===");
-
-        // 인사이트 데이터 직접 가져오기
-        const { fetchUserInsights } = await import(
-          "~/features/users/utils/insights-utils"
-        );
-        const insightsData = await fetchUserInsights(client, user.id);
-
-        if (insightsData.success && insightsData.data) {
-          // 팔로워 수 업데이트
-          const followersCount = await getFollowersCount(
-            insightsData.data.data,
-          );
-          await updateThreadFollowersCount(
-            client,
-            localThreadId,
-            followersCount,
-          );
-
-          // 모든 인사이트 데이터 저장 (시계열 + 총계)
-          await saveUserInsights(
-            client,
-            user.id,
-            localThreadId,
-            insightsData.data.data,
-          );
-
-          console.log("백그라운드 사용자 인사이트 저장 완료");
-        }
-      } catch (insightsError) {
-        console.error("백그라운드 사용자 인사이트 저장 실패:", insightsError);
-        // 인사이트 저장 실패는 전체 프로세스를 실패시키지 않음
-      }
-    } catch (error) {
-      console.error("백그라운드 Threads API 호출 실패:", error);
-
-      // 실패 시에도 로컬 DB는 유지하되 에러 상태로 표시
-      const { error: updateError } = await client
-        .from("threads")
-        .update({
-          send_flag: false,
-          result_id: "ERROR",
-        })
-        .eq("thread_id", localThreadId);
-
-      if (updateError) {
-        console.error("Error updating error status:", updateError);
-      }
+    // 6가지 경우의 수에 따른 분기 처리
+    if (totalMediaCount === 0) {
+      // 1. 텍스트만
+      console.log("=== 케이스 1: 텍스트만 ===");
+      processingResult = await processSingleMedia(
+        snsId,
+        text,
+        accessToken,
+        undefined,
+        undefined,
+      );
+    } else if (totalMediaCount === 1) {
+      // 2. 이미지 1개 또는 동영상 1개
+      console.log("=== 케이스 2-3: 단일 미디어 ===");
+      processingResult = await processSingleMedia(
+        snsId,
+        text,
+        accessToken,
+        imageUrl,
+        videoUrl,
+      );
+    } else if (hasMultipleImages && !hasVideos) {
+      // 4. 이미지 2개 이상
+      console.log("=== 케이스 4: 다중 이미지 ===");
+      const allImageUrls = [imageUrl, imageUrls].filter(Boolean).join(",");
+      processingResult = await processMultipleMedia(
+        snsId,
+        text,
+        accessToken,
+        allImageUrls,
+        "image",
+      );
+    } else if (hasMultipleVideos && !hasImages) {
+      // 5. 동영상 2개 이상
+      console.log("=== 케이스 5: 다중 동영상 ===");
+      const allVideoUrls = [videoUrl, videoUrls].filter(Boolean).join(",");
+      processingResult = await processMultipleMedia(
+        snsId,
+        text,
+        accessToken,
+        allVideoUrls,
+        "video",
+      );
+    } else if (hasMixedMedia) {
+      // 6. 이미지 + 동영상 혼합
+      console.log("=== 케이스 6: 혼합 미디어 ===");
+      processingResult = await processMixedMedia(
+        snsId,
+        text,
+        accessToken,
+        imageUrl,
+        videoUrl,
+        imageUrls,
+        videoUrls,
+      );
+    } else {
+      // 예상치 못한 경우 (fallback)
+      console.log("=== 예상치 못한 케이스, 단일 미디어로 처리 ===");
+      processingResult = await processSingleMedia(
+        snsId,
+        text,
+        accessToken,
+        imageUrl,
+        videoUrl,
+      );
     }
-  })();
 
-  // 즉시 성공 응답 반환 (사용자는 목록으로 이동)
-  return data(
-    {
-      success: true,
-      localThreadId,
-      message:
-        "홍보글이 저장되었습니다. Threads 업로드가 백그라운드에서 진행 중입니다.",
-    },
-    { status: 200 },
-  );
+    const { threadId } = processingResult;
+
+    console.log("Threads API 호출 성공, threadId:", threadId);
+
+    // 성공 시 로컬 DB 업데이트
+    await updateThreadResultId(client, localThreadId, threadId);
+
+    // send_flag도 true로 업데이트
+    const { error: updateError } = await client
+      .from("threads")
+      .update({ send_flag: true })
+      .eq("thread_id", localThreadId);
+
+    if (updateError) {
+      console.error("Error updating send_flag:", updateError);
+    }
+
+    console.log("로컬 DB 업데이트 완료");
+
+    // 사용자 인사이트 저장
+    try {
+      console.log("=== 사용자 인사이트 저장 시작 ===");
+
+      // 인사이트 데이터 직접 가져오기
+      const { fetchUserInsights } = await import(
+        "~/features/users/utils/insights-utils"
+      );
+      const insightsData = await fetchUserInsights(client, user.id);
+
+      if (insightsData.success && insightsData.data) {
+        // 팔로워 수 업데이트
+        const followersCount = await getFollowersCount(insightsData.data.data);
+        await updateThreadFollowersCount(client, localThreadId, followersCount);
+
+        // 모든 인사이트 데이터 저장 (시계열 + 총계)
+        await saveUserInsights(
+          client,
+          user.id,
+          localThreadId,
+          insightsData.data.data,
+        );
+
+        console.log("사용자 인사이트 저장 완료");
+      }
+    } catch (insightsError) {
+      console.error("사용자 인사이트 저장 실패:", insightsError);
+      // 인사이트 저장 실패는 전체 프로세스를 실패시키지 않음
+    }
+
+    // 성공 응답 반환
+    return data(
+      {
+        success: true,
+        localThreadId,
+        threadId,
+        message: "홍보글이 성공적으로 Threads에 업로드되었습니다.",
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Threads API 호출 실패:", error);
+
+    // 실패 시에도 로컬 DB는 유지하되 에러 상태로 표시
+    const { error: updateError } = await client
+      .from("threads")
+      .update({
+        send_flag: false,
+        result_id: "ERROR",
+      })
+      .eq("thread_id", localThreadId);
+
+    if (updateError) {
+      console.error("Error updating error status:", updateError);
+    }
+
+    // 실패 응답 반환
+    return data(
+      {
+        success: false,
+        error: "Threads 업로드에 실패했습니다.",
+        localThreadId,
+      },
+      { status: 500 },
+    );
+  }
 }
