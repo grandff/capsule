@@ -14,6 +14,7 @@ export default defineConfig((config) => {
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
     authToken: process.env.SENTRY_AUTH_TOKEN,
+    telemetry: false, // Sentry telemetry 비활성화
   };
   let plugins: PluginOption[] = [tailwindcss(), reactRouter(), tsconfigPaths()];
   if (
@@ -50,7 +51,15 @@ export default defineConfig((config) => {
       },
     },
     build: {
-      sourcemap: Boolean(process.env.SENTRY_DSN),
+      sourcemap: process.env.NODE_ENV === "development", // 개발 환경에서만 sourcemap 활성화
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // MagicUI와 Framer Motion을 별도 청크로 분리
+            magicui: ["motion/react"],
+          },
+        },
+      },
     },
     plugins,
     sentryConfig,
