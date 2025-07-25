@@ -3,6 +3,7 @@ import type { Route } from "./+types/dashboard";
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
+import { toast } from "sonner";
 
 import { requireAuthentication } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
@@ -86,6 +87,14 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
     }
   }, [searchParams]);
 
+  // 온보딩 완료 후 토스트 표시
+  const showOnboardingCompleteToast = () => {
+    toast.success("이제 새로운 글 메뉴로 가서 나를 소개하는 글을 써보세요!", {
+      duration: 5000,
+      description: "첫 번째 글을 작성해보세요!",
+    });
+  };
+
   // 온보딩 완료 처리
   const handleOnboardingComplete = async () => {
     setIsOnboardingLoading(true);
@@ -101,11 +110,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
       if (response.ok) {
         setShowOnboarding(false);
+        showOnboardingCompleteToast();
       }
     } catch (error) {
       console.error("Error updating first login status:", error);
       // 에러가 발생해도 다이얼로그는 닫기
       setShowOnboarding(false);
+      showOnboardingCompleteToast();
     } finally {
       setIsOnboardingLoading(false);
     }
@@ -126,11 +137,13 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
       if (response.ok) {
         setShowOnboarding(false);
+        showOnboardingCompleteToast();
       }
     } catch (error) {
       console.error("Error updating first login status:", error);
       // 에러가 발생해도 다이얼로그는 닫기
       setShowOnboarding(false);
+      showOnboardingCompleteToast();
     } finally {
       setIsCloseLoading(false);
     }

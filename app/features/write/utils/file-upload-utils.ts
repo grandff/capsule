@@ -1,3 +1,33 @@
+import { createClient } from "@supabase/supabase-js";
+import { toast } from "sonner";
+
+import {
+  ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
+  MAX_IMAGE_SIZE,
+  MAX_VIDEO_SIZE,
+} from "~/constants";
+
+// 클라이언트용 Supabase 클라이언트 생성
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Supabase 환경 변수가 설정되지 않았습니다!");
+  console.error("VITE_SUPABASE_URL:", supabaseUrl);
+  console.error(
+    "VITE_SUPABASE_ANON_KEY:",
+    supabaseAnonKey ? "설정됨" : "설정되지 않음",
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+  },
+});
+
 export interface UploadedFile {
   id: string;
   file: File;
@@ -12,33 +42,65 @@ export interface UploadedFile {
 // 파일 제한 설정
 export const FILE_LIMITS = {
   MAX_FILES: 20,
-  MAX_IMAGE_SIZE: 8 * 1024 * 1024, // 8MB
-  MAX_VIDEO_SIZE: 1024 * 1024 * 1024, // 1GB
-  ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png"],
-  ALLOWED_VIDEO_TYPES: ["video/mp4", "video/quicktime"],
+  MAX_IMAGE_SIZE: MAX_IMAGE_SIZE,
+  MAX_VIDEO_SIZE: MAX_VIDEO_SIZE,
+  ALLOWED_IMAGE_TYPES: ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES: ALLOWED_VIDEO_TYPES,
 } as const;
 
-// 파일을 API를 통해 Supabase Storage에 업로드
-export async function uploadFileToStorage(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
+// 파일을 Supabase Storage에 직접 업로드 (클라이언트에서)
+export async function uploadFileToStorage(
+  file: File,
+  userId: string,
+): Promise<string> {
+  try {
+    console.log("=== 파일 업로드 시작 ===");
+    console.log("파일명:", file.name);
+    console.log("파일 크기:", file.size, "bytes");
+    console.log("파일 타입:", file.type);
+    console.log("사용자 ID:", userId);
 
-  const response = await fetch("/api/write/upload-media", {
-    method: "POST",
-    body: formData,
-  });
+    // 올바른 버킷 구조: {user.id}/{year}/{month}/{day}/{fileName}
+    const today = new Date();
+    const year = today.getFullYear().toString();
+    const month = (today.getMonth() + 1).toString().padStart(2, "0");
+    const day = today.getDate().toString().padStart(2, "0");
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${file.name}`;
+    const fullPath = `${userId}/${year}/${month}/${day}/${fileName}`;
 
-  const result = await response.json();
+    console.log(`파일 업로드 경로: ${fullPath}`);
 
-  if (!response.ok) {
-    throw new Error(result.error || "파일 업로드 실패");
+    // Supabase Storage에 직접 업로드
+    console.log("Supabase Storage 업로드 시작...");
+    const { data, error } = await supabase.storage
+      .from("upload-medias")
+      .upload(fullPath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (error) {
+      console.error("Upload error:", error);
+      throw new Error(error.message || "파일 업로드에 실패했습니다.");
+    }
+
+    console.log("업로드 성공! 데이터:", data);
+
+    // 공개 URL 생성
+    const { data: urlData } = supabase.storage
+      .from("upload-medias")
+      .getPublicUrl(fullPath);
+
+    console.log("공개 URL 생성:", urlData.publicUrl);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("Upload file to storage error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "파일 업로드 실패";
+    throw new Error(errorMessage);
   }
-
-  if (!result.success) {
-    throw new Error(result.error || "파일 업로드 실패");
-  }
-
-  return result.url;
 }
 
 // 파일 크기 포맷팅
@@ -110,18 +172,17 @@ export function createUploadedFile(file: File): UploadedFile {
 
 // 파일 삭제
 export async function deleteFileFromStorage(filePath: string): Promise<void> {
-  const formData = new FormData();
-  formData.append("filePath", filePath);
+  try {
+    const { error } = await supabase.storage
+      .from("upload-medias")
+      .remove([filePath]);
 
-  const response = await fetch("/api/write/delete-media", {
-    method: "DELETE",
-    body: formData,
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.error || "파일 삭제 실패");
+    if (error) {
+      throw new Error(error.message || "파일 삭제 실패");
+    }
+  } catch (error) {
+    console.error("Delete file from storage error:", error);
+    throw new Error(error instanceof Error ? error.message : "파일 삭제 실패");
   }
 }
 

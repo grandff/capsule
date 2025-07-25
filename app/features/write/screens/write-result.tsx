@@ -3,10 +3,11 @@ import type { Route } from "./+types/write-result";
 
 import { useEffect, useRef, useState } from "react";
 import { Form, useLoaderData, useNavigate } from "react-router";
-import { ToastContainer } from "react-toastify";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
+import makeServerClient from "~/core/lib/supa-client.server";
 
 import { ActionButtons } from "../components/action-buttons";
 import { GeneratedContentCard } from "../components/generated-content-card";
@@ -45,32 +46,35 @@ export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const resultParam = url.searchParams.get("result");
   if (!resultParam) {
-    return new Response(JSON.stringify({ error: "결과 데이터가 없습니다." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    throw new Error("결과 데이터가 없습니다.");
   }
+
   try {
     const parsed = JSON.parse(resultParam);
     const result = promotionResultSchema.parse(parsed);
-    return new Response(JSON.stringify({ result }), {
-      headers: { "Content-Type": "application/json" },
-    });
+
+    // 사용자 ID 가져오기
+    const [client] = makeServerClient(request);
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    return {
+      result,
+      userId: user?.id,
+    };
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: "결과 데이터 파싱 또는 검증 실패" }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
+    throw new Error("결과 데이터 파싱 또는 검증 실패");
   }
 }
 
 interface LoaderData {
   result?: z.infer<typeof promotionResultSchema>;
+  userId?: string | null;
   error?: string;
 }
 
-export default function WriteResult() {
-  const loaderData = useLoaderData() as LoaderData;
+export default function WriteResult({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [isFileUploading, setIsFileUploading] = useState(false);
@@ -82,29 +86,12 @@ export default function WriteResult() {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
-  const [result, setResult] = useState<z.infer<
-    typeof promotionResultSchema
-  > | null>(null);
+
   const formRef = useRef<HTMLFormElement>(null);
 
-  // result 상태 초기화
-  useEffect(() => {
-    if (loaderData.result) {
-      setResult(loaderData.result);
-    }
-  }, [loaderData.result]);
+  // result와 userId 상태 초기화
 
-  if (loaderData?.error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Alert className="border-red-200 bg-red-50 text-red-800">
-          <AlertDescription>{loaderData.error}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (!result) {
+  if (!loaderData.result) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Alert className="border-red-200 bg-red-50 text-red-800">
@@ -119,19 +106,28 @@ export default function WriteResult() {
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || !loaderData.userId) return;
 
-    await handleFileUpload(
-      files,
-      uploadedFiles,
-      setUploadedFiles,
-      setUploadError,
-      setIsFileUploading,
-    );
+    // 파일 업로드 시작 알림
+    toast.info(`${files.length}개 파일 업로드 시작...`);
 
-    // 파일 입력 초기화
-    if (event.target) {
-      event.target.value = "";
+    try {
+      await handleFileUpload(
+        files,
+        uploadedFiles,
+        setUploadedFiles,
+        setUploadError,
+        setIsFileUploading,
+        loaderData.userId,
+      );
+
+      // 파일 입력 초기화
+      if (event.target) {
+        event.target.value = "";
+      }
+    } catch (error) {
+      console.error("파일 업로드 중 오류:", error);
+      toast.error("파일 업로드 중 오류가 발생했습니다.");
     }
   };
 
@@ -149,10 +145,11 @@ export default function WriteResult() {
     if (!fileToRemove) return;
 
     try {
-      // API를 통해 Supabase Storage에서 파일 삭제
+      // Supabase Storage에서 파일 삭제
       if (fileToRemove.uploadedUrl) {
         const filePath = extractFilePathFromUrl(fileToRemove.uploadedUrl);
         await deleteFileFromStorage(filePath);
+        toast.success(`${fileToRemove.name} 삭제 완료!`);
       }
 
       // 로컬 상태에서 파일 제거
@@ -165,6 +162,9 @@ export default function WriteResult() {
       });
     } catch (error) {
       console.error("파일 삭제 중 오류:", error);
+      toast.error(
+        `${fileToRemove.name} 삭제 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`,
+      );
     } finally {
       setShowDeleteAlert(false);
       setFileToDelete(null);
@@ -179,23 +179,20 @@ export default function WriteResult() {
   // 편집 모드 토글 핸들러
   const handleToggleEdit = () => {
     if (!isEditing) {
-      setEditedContent(result?.content || "");
+      setEditedContent(loaderData.result?.content || "");
     }
     setIsEditing(!isEditing);
   };
 
   // 편집 완료 핸들러
   const handleSaveEdit = () => {
-    // result 객체를 직접 수정할 수 없으므로, 새로운 상태로 관리
-    setResult((prev: z.infer<typeof promotionResultSchema> | null) =>
-      prev ? { ...prev, content: editedContent } : prev,
-    );
+    // 편집된 내용을 editedContent에 저장하고 편집 모드 종료
     setIsEditing(false);
   };
 
   // 편집 취소 핸들러
   const handleCancelEdit = () => {
-    setEditedContent(result?.content || "");
+    setEditedContent(loaderData.result?.content || "");
     setIsEditing(false);
   };
 
@@ -209,16 +206,18 @@ export default function WriteResult() {
   };
 
   // 현재 표시할 콘텐츠 (편집 중이면 editedContent, 아니면 원본)
-  const displayContent = isEditing ? editedContent : result.content;
+  const displayContent = isEditing
+    ? editedContent
+    : loaderData.result?.content || "";
 
   // 업로드하기 핸들러
   const handleUpload = async (platform: string) => {
-    if (!result) return;
+    if (!loaderData.result) return;
 
     if (platform === "threads") {
       // 먼저 DB에 저장하고 목록으로 이동
       await handleThreadsUpload(
-        result,
+        loaderData.result,
         displayContent,
         uploadedFiles,
         setIsUploading,
@@ -236,9 +235,6 @@ export default function WriteResult() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Toast 알림 */}
-      <ToastContainer />
-
       {/* 성공 알림 */}
       <SuccessAlert show={showSuccessAlert} />
 
@@ -261,21 +257,21 @@ export default function WriteResult() {
           </div>
 
           {/* 원본 텍스트 */}
-          <OriginalTextCard originalText={result.originalText} />
+          <OriginalTextCard originalText={loaderData.result.originalText} />
 
           {/* 선택된 옵션들 */}
           <SelectedOptionsCard
-            moods={result.moods}
-            keywords={result.keywords}
-            intents={result.intents}
-            length={result.length}
-            timeframe={result.timeframe}
-            weather={result.weather}
+            moods={loaderData.result.moods}
+            keywords={loaderData.result.keywords}
+            intents={loaderData.result.intents}
+            length={loaderData.result.length}
+            timeframe={loaderData.result.timeframe}
+            weather={loaderData.result.weather}
           />
 
           {/* 생성된 홍보글 */}
           <GeneratedContentCard
-            content={result.content}
+            content={loaderData.result.content}
             isEditing={isEditing}
             editedContent={editedContent}
             isCopied={isCopied}
@@ -313,7 +309,11 @@ export default function WriteResult() {
         encType="multipart/form-data"
         className="hidden"
       >
-        <input type="hidden" name="text" value={result?.content || ""} />
+        <input
+          type="hidden"
+          name="text"
+          value={loaderData.result?.content || ""}
+        />
         {/* 이미지/동영상 파일이 있다면 첫 번째 파일의 url을 전달 (실제 업로드 구현에 따라 수정) */}
         {uploadedFiles.length > 0 && uploadedFiles[0].type === "image" && (
           <input
@@ -333,3 +333,5 @@ export default function WriteResult() {
     </div>
   );
 }
+
+// TODO error boundary 추가

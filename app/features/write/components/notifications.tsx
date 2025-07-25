@@ -2,6 +2,14 @@ import { CheckCircle2Icon } from "lucide-react";
 
 import { Alert, AlertDescription } from "~/core/components/ui/alert";
 import { Button } from "~/core/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/core/components/ui/dialog";
 
 interface SuccessAlertProps {
   show: boolean;
@@ -33,23 +41,24 @@ export function DeleteConfirmAlert({
   onConfirm,
   onCancel,
 }: DeleteConfirmAlertProps) {
-  if (!show) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Alert className="w-96 border-red-200 bg-red-50 text-red-800">
-        <AlertDescription className="space-y-4">
-          <p>정말로 이 파일을 삭제하시겠습니까?</p>
-          <div className="flex gap-2">
-            <Button onClick={onConfirm} variant="destructive" size="sm">
-              삭제
-            </Button>
-            <Button onClick={onCancel} variant="outline" size="sm">
-              취소
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-    </div>
+    <Dialog open={show} onOpenChange={onCancel}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>파일 삭제 확인</DialogTitle>
+          <DialogDescription>
+            정말로 이 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={onCancel} variant="outline">
+            취소
+          </Button>
+          <Button onClick={onConfirm} variant="destructive">
+            삭제
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

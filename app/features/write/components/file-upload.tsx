@@ -1,6 +1,13 @@
 import { ImageIcon, UploadIcon, VideoIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
+import {
+  ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
+  MAX_FILES,
+  MAX_FILE_SIZE,
+} from "~/constants";
 import { Badge } from "~/core/components/ui/badge";
 import { Button } from "~/core/components/ui/button";
 
@@ -28,26 +35,11 @@ interface FileUploadProps {
   maxFileSize?: number; // MB 단위
 }
 
-const ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-];
-const ALLOWED_VIDEO_TYPES = [
-  "video/mp4",
-  "video/mov",
-  "video/avi",
-  "video/quicktime",
-];
-const DEFAULT_MAX_FILES = 20;
-const DEFAULT_MAX_FILE_SIZE = 500; // 500MB (동영상 최대 크기)
-
 export default function FileUpload({
   files,
   onFilesChange,
-  maxFiles = DEFAULT_MAX_FILES,
-  maxFileSize = DEFAULT_MAX_FILE_SIZE,
+  maxFiles = MAX_FILES,
+  maxFileSize = MAX_FILE_SIZE,
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string>("");
@@ -106,7 +98,9 @@ export default function FileUpload({
     setError("");
 
     if (files.length + newFiles.length > maxFiles) {
-      setError(`최대 ${maxFiles}개까지 업로드 가능합니다.`);
+      const errorMsg = `최대 ${maxFiles}개까지 업로드 가능합니다.`;
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -116,6 +110,7 @@ export default function FileUpload({
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
+        toast.error(`${file.name}: ${validationError}`);
         continue;
       }
 
@@ -138,9 +133,18 @@ export default function FileUpload({
         };
 
         validFiles.push(uploadedFile);
+
+        // 성공 메시지
+        if (processedFile.size !== file.size) {
+          toast.success(`${file.name} 압축 완료!`);
+        } else {
+          toast.success(`${file.name} 추가 완료!`);
+        }
       } catch (error) {
         console.error("파일 처리 오류:", error);
-        setError("파일 처리 중 오류가 발생했습니다.");
+        const errorMsg = "파일 처리 중 오류가 발생했습니다.";
+        setError(errorMsg);
+        toast.error(`${file.name}: ${errorMsg}`);
       }
     }
 
@@ -154,6 +158,7 @@ export default function FileUpload({
     const fileToRemove = files.find((f) => f.id === fileId);
     if (fileToRemove) {
       URL.revokeObjectURL(fileToRemove.preview);
+      toast.success(`${fileToRemove.file.name} 제거 완료!`);
     }
     onFilesChange(files.filter((f) => f.id !== fileId));
     setError("");

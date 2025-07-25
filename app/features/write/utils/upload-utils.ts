@@ -36,14 +36,31 @@ export async function handleFileUpload(
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>,
   setUploadError: (error: string) => void,
   setIsFileUploading: (uploading: boolean) => void,
+  userId: string, // userId 매개변수 추가
 ): Promise<void> {
-  if (!files) return;
+  console.log("=== handleFileUpload 시작 ===");
+  console.log("선택된 파일 개수:", files.length);
+  console.log("현재 업로드된 파일 개수:", uploadedFiles.length);
+  console.log("사용자 ID:", userId);
+
+  if (!files) {
+    console.log("파일이 선택되지 않았습니다.");
+    return;
+  }
+
+  if (!userId) {
+    console.error("사용자 ID가 없습니다!");
+    setUploadError("사용자 인증이 필요합니다. 다시 로그인해주세요.");
+    return;
+  }
 
   setUploadError("");
 
   // 파일 개수 체크
   if (uploadedFiles.length + files.length > 20) {
-    setUploadError("최대 20개까지만 업로드 가능합니다.");
+    const errorMsg = "최대 20개까지만 업로드 가능합니다.";
+    console.error(errorMsg);
+    setUploadError(errorMsg);
     return;
   }
 
@@ -51,14 +68,29 @@ export async function handleFileUpload(
   const newFiles: UploadedFile[] = [];
 
   Array.from(files).forEach((file) => {
-    // 파일 타입 체크
-    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
-    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+    console.log(
+      `파일 처리 중: ${file.name} (${file.type}, ${file.size} bytes)`,
+    );
+
+    // 파일 타입 확인 (와일드카드 패턴 처리)
+    const isImage = ALLOWED_IMAGE_TYPES.some(
+      (type) =>
+        type === file.type ||
+        (type.endsWith("/*") && file.type.startsWith(type.slice(0, -2))),
+    );
+    const isVideo = ALLOWED_VIDEO_TYPES.some(
+      (type) =>
+        type === file.type ||
+        (type.endsWith("/*") && file.type.startsWith(type.slice(0, -2))),
+    );
+    console.log("isImage", isImage);
+    console.log("isVideo", isVideo);
 
     if (!isImage && !isVideo) {
-      setUploadError(
-        "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG, JPG / 동영상: MP4, MOV, QUICKTIME)",
-      );
+      const errorMsg =
+        "지원하지 않는 파일 형식입니다. (이미지: JPG, PNG, JPG / 동영상: MP4, MOV, QUICKTIME)";
+      console.error(errorMsg);
+      setUploadError(errorMsg);
       return;
     }
 
@@ -66,9 +98,9 @@ export async function handleFileUpload(
     const maxSize = isImage ? 6 * 1024 * 1024 : 500 * 1024 * 1024;
     if (file.size > maxSize) {
       const maxSizeMB = isImage ? "6MB" : "500MB";
-      setUploadError(
-        `${file.name} 파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`,
-      );
+      const errorMsg = `${file.name} 파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`;
+      console.error(errorMsg);
+      setUploadError(errorMsg);
       return;
     }
 
@@ -90,18 +122,27 @@ export async function handleFileUpload(
     };
 
     newFiles.push(newFile);
+    console.log(`파일 추가됨: ${file.name} (ID: ${fileId})`);
   });
+
+  if (newFiles.length === 0) {
+    console.log("업로드할 유효한 파일이 없습니다.");
+    return;
+  }
 
   // 파일들을 상태에 추가
   setUploadedFiles([...uploadedFiles, ...newFiles]);
+  console.log(`총 ${newFiles.length}개 파일을 상태에 추가했습니다.`);
 
   // 파일 업로드 시작
   setIsFileUploading(true);
+  console.log("파일 업로드 시작...");
 
-  // 각 파일을 API를 통해 업로드
+  // 각 파일을 Supabase Storage에 직접 업로드
   for (const file of newFiles) {
     try {
-      const uploadedUrl = await uploadFileToStorage(file.file);
+      console.log(`파일 업로드 중: ${file.name}`);
+      const uploadedUrl = await uploadFileToStorage(file.file, userId);
 
       // 업로드 완료된 파일 업데이트
       setUploadedFiles((prev) =>
@@ -110,14 +151,13 @@ export async function handleFileUpload(
         ),
       );
 
-      toast.success(`${file.name} 업로드 완료!`, {
-        autoClose: SHORT_TOAST_DURATION,
-      });
+      console.log(`파일 업로드 완료: ${file.name} -> ${uploadedUrl}`);
+      toast.success(`${file.name} 업로드 완료!`);
     } catch (error) {
       console.error(`파일 업로드 실패: ${file.name}`, error);
-      toast.error(`${file.name} 업로드 실패`, {
-        autoClose: SHORT_TOAST_DURATION,
-      });
+      toast.error(
+        `${file.name} 업로드 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`,
+      );
 
       // 실패한 파일 제거
       setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id));
@@ -126,6 +166,7 @@ export async function handleFileUpload(
 
   // 파일 업로드 완료
   setIsFileUploading(false);
+  console.log("모든 파일 업로드 처리 완료");
 }
 
 // Threads 업로드 핸들러

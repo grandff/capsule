@@ -2,7 +2,14 @@ import type { ActionFunctionArgs } from "react-router";
 
 import { data } from "react-router";
 
-import { ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES } from "~/constants";
+import {
+  ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
+  MAX_IMAGE_SIZE,
+  MAX_IMAGE_SIZE_MB,
+  MAX_VIDEO_SIZE,
+  MAX_VIDEO_SIZE_MB,
+} from "~/constants";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import {
@@ -11,9 +18,6 @@ import {
   isVideoFile,
   needsCompression,
 } from "../utils/media-compressor";
-
-const MAX_IMAGE_SIZE = 6 * 1024 * 1024; // 6MB
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
@@ -71,7 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const maxSize = isImage ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
 
     if (fileSize > maxSize) {
-      const maxSizeMB = isImage ? "6MB" : "500MB";
+      const maxSizeMB = isImage ? MAX_IMAGE_SIZE_MB : MAX_VIDEO_SIZE_MB;
       return data(
         {
           error: `파일이 너무 큽니다. 최대 ${maxSizeMB}까지 가능합니다.`,
