@@ -52,14 +52,6 @@ export default defineConfig((config) => {
     },
     build: {
       sourcemap: process.env.NODE_ENV === "development", // 개발 환경에서만 sourcemap 활성화
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            // MagicUI와 Framer Motion을 별도 청크로 분리
-            magicui: ["motion/react"],
-          },
-        },
-      },
     },
     plugins,
     sentryConfig,
