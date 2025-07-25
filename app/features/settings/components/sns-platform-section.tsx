@@ -27,14 +27,14 @@ export default function SnsPlatformSection({
   return (
     <Card key={platform.id} className="transition-shadow hover:shadow-md">
       <CardContent className="p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           {/* 왼쪽: 로고와 정보 */}
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 text-gray-700">
               {platform.logo}
             </div>
             <div className="flex-1">
-              <div className="mb-1 flex items-center gap-3">
+              <div className="mb-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <h3 className="text-lg font-semibold">{platform.name}</h3>
                 {getStatusBadge(connectedSNSArray, platform)}
               </div>

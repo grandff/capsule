@@ -24,7 +24,7 @@ export function ActionButtons({
   onUpload,
 }: ActionButtonsProps) {
   return (
-    <div className="flex justify-center gap-4 pt-6">
+    <div className="flex flex-col-reverse justify-center gap-4 pt-6 sm:flex-row">
       <Button
         onClick={onRewrite}
         variant="outline"

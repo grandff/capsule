@@ -36,7 +36,7 @@ export default function Account({ loaderData }: Route.ComponentProps) {
     (identity) => identity.provider === "email",
   );
   return (
-    <div className="flex w-full flex-col items-center gap-10 pt-0 pb-8">
+    <div className="flex w-full flex-col items-center gap-10 px-4 pt-0 pb-8 sm:px-6 lg:px-8">
       <Suspense
         fallback={
           <div className="bg-card animate-fast-pulse h-60 w-full max-w-screen-md rounded-xl border shadow-sm" />

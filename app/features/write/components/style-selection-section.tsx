@@ -67,11 +67,11 @@ export function StyleSelectionSection({
     <div className="space-y-8">
       {/* 생성 방식 선택 UI */}
       <div className="mb-8 flex flex-col items-center gap-4">
-        <div className="flex gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
           <Button
             variant={writeMode === "good" ? "default" : "outline"}
             onClick={() => setWriteMode("good")}
-            className={`px-6 py-3 text-base font-medium ${
+            className={`w-full px-6 py-3 text-base font-medium sm:w-auto ${
               writeMode === "good"
                 ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                 : "border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -82,7 +82,7 @@ export function StyleSelectionSection({
           <Button
             variant="outline"
             onClick={() => {}} // 빈 함수로 이벤트 없음
-            className="cursor-not-allowed border-gray-300 px-6 py-3 text-base font-medium text-gray-500 opacity-50 dark:border-gray-600 dark:text-gray-400"
+            className="w-full cursor-not-allowed border-gray-300 px-6 py-3 text-base font-medium text-gray-500 opacity-50 sm:w-auto dark:border-gray-600 dark:text-gray-400"
           >
             검색이 필요해요
           </Button>

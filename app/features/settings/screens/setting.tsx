@@ -197,8 +197,17 @@ export default function Setting({ loaderData }: Route.ComponentProps) {
     }
   }, [settings]);
 
+  // loaderData에서 설정 가져오기 (우선순위)
+  useEffect(() => {
+    if (loaderData?.success && loaderData?.data) {
+      console.log("loaderData에서 설정 로드:", loaderData.data);
+      setLocalSettings(loaderData.data);
+    }
+  }, [loaderData]);
+
   console.log("설정 화면 - loaderData:", loaderData);
   console.log("설정 화면 - settings:", settings);
+  console.log("설정 화면 - localSettings:", localSettings);
 
   // 오류 상태 관리
   const [themeError, setThemeError] = useState<string | null>(null);

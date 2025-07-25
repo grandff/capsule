@@ -1,6 +1,7 @@
 import type { Trend } from "../queries";
 
 import { TrendingUp } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "~/core/components/ui/badge";
 import {
@@ -10,22 +11,35 @@ import {
   CardTitle,
 } from "~/core/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/core/components/ui/dialog";
+import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "~/core/components/ui/hover-card";
+import { useIsMobile } from "~/core/hooks/use-mobile";
 
 interface TrendDataProps {
   trend: Trend;
 }
 
 export function TrendData({ trend }: TrendDataProps) {
+  const isMobile = useIsMobile();
+  const [selectedKeyword, setSelectedKeyword] = useState<
+    (typeof trend.trend_keywords)[0] | null
+  >(null);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          인기 키워드 TOP {trend.trend_keywords.length}
+          인기 트렌드 TOP {trend.trend_keywords.length}
         </CardTitle>
         <p className="text-muted-foreground text-sm">
           {trend.trend_date} 기준 트렌드 분석 결과
@@ -51,19 +65,40 @@ export function TrendData({ trend }: TrendDataProps) {
                   </div>
                 </div>
                 <div className="text-muted-foreground text-sm">
-                  <HoverCard>
-                    <HoverCardTrigger asChild>
-                      <p className="line-clamp-3">{keyword.description}</p>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-80">
-                      <div className="space-y-2">
-                        <h4 className="font-medium">
-                          #{keyword.rank} {keyword.keyword}
-                        </h4>
+                  {isMobile ? (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button
+                          className="w-full text-left"
+                          onClick={() => setSelectedKeyword(keyword)}
+                        >
+                          <p className="line-clamp-3">{keyword.description}</p>
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>
+                            #{keyword.rank} {keyword.keyword}
+                          </DialogTitle>
+                        </DialogHeader>
                         <p className="text-sm">{keyword.description}</p>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <p className="line-clamp-3">{keyword.description}</p>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80">
+                        <div className="space-y-2">
+                          <h4 className="font-medium">
+                            #{keyword.rank} {keyword.keyword}
+                          </h4>
+                          <p className="text-sm">{keyword.description}</p>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  )}
                 </div>
               </div>
             ))}

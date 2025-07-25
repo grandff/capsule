@@ -2,7 +2,7 @@ import type { Route } from "./+types/history-detail";
 
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { requireAuthentication } from "~/core/lib/guards.server";
@@ -93,7 +93,6 @@ export default function HistoryDetail({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      <ToastContainer />
       {/* 뒤로가기 버튼 */}
       <BackButton />
 

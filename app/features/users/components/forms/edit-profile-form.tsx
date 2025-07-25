@@ -52,7 +52,7 @@ export default function EditProfileForm({
   return (
     <fetcher.Form
       method="post"
-      className="w-full max-w-screen-md"
+      className="w-full max-w-screen-md px-4 sm:px-0"
       encType="multipart/form-data"
       ref={formRef}
       action="/api/users/profile"
